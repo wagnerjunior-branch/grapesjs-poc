@@ -310,14 +310,17 @@ export default function BannerEditor() {
 
   const getProjetData = () => {
     if (editor) {
-      console.log({ projectData: editor?.getProjectData() });
+      const projectData = editor.getProjectData();
+      console.log({ projectData });
       showToast('log-project-data');
     }
   };
 
   const getExportData = () => {
     if (editor) {
-      console.log({ html: editor?.getHtml(), css: editor?.getCss() });
+      const html = editor.getHtml();
+      const css = editor.getCss();
+      console.log({ html, css });
       showToast('log-html-css');
     }
   };

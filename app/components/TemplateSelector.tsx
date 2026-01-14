@@ -105,6 +105,7 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
 export default function TemplateSelector() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -125,8 +126,38 @@ export default function TemplateSelector() {
     }
   };
 
-  const handleSelectTemplate = (bannerId: string) => {
-    router.push(`/creatives/new?templateId=${bannerId}`);
+  const handleSelectTemplate = async (bannerId: string) => {
+    try {
+      setCreating(bannerId);
+      const response = await fetch(`/api/banners/${bannerId}`);
+      if (!response.ok) throw new Error('Failed to load template');
+      const template = await response.json();
+
+      const creativeData = {
+        name: `${template.name} - Creative`,
+        bannerId: template.id,
+        projectData: template.projectData,
+        html: template.html,
+        css: template.css,
+      };
+
+      const createResponse = await fetch('/api/creatives', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(creativeData),
+      });
+
+      if (!createResponse.ok) throw new Error('Failed to create creative');
+      const creative = await createResponse.json();
+      
+      router.push(`/creatives/${creative.id}`);
+    } catch (error) {
+      console.error('Error creating creative from template:', error);
+      alert('Failed to create creative from template');
+      setCreating(null);
+    }
   };
 
   if (loading) {
@@ -185,9 +216,10 @@ export default function TemplateSelector() {
                       e.stopPropagation();
                       handleSelectTemplate(banner.id);
                     }}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                    disabled={creating === banner.id}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Use This Template
+                    {creating === banner.id ? 'Creating...' : 'Use This Template'}
                   </button>
                 </div>
               </div>

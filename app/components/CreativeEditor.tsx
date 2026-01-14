@@ -1,12 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Editor } from 'grapesjs';
-import GrapesJsStudio, {
-  StudioCommands,
-  ToastVariant,
-} from '@grapesjs/studio-sdk/react';
+import GrapesJsStudio from '@grapesjs/studio-sdk/react';
 
 import '@grapesjs/studio-sdk/style';
 
@@ -16,6 +13,7 @@ export default function CreativeEditor() {
   const [creativeName, setCreativeName] = useState('Untitled Creative');
   const [bannerId, setBannerId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -47,7 +45,7 @@ export default function CreativeEditor() {
   }, []);
 
   useEffect(() => {
-    const id = searchParams.get('id');
+    const id = params?.id as string | undefined;
     const templateId = searchParams.get('templateId');
     
     if (id) {
@@ -57,7 +55,7 @@ export default function CreativeEditor() {
       setBannerId(templateId);
       loadTemplate(templateId);
     }
-  }, [searchParams, loadCreative, loadTemplate]);
+  }, [params, searchParams, loadCreative, loadTemplate]);
 
   useEffect(() => {
     const originalError = console.error;
@@ -149,13 +147,6 @@ export default function CreativeEditor() {
     }, 300);
   };
 
-  const showToast = (id: string) =>
-    editor?.runCommand(StudioCommands.toastAdd, {
-      id,
-      header: 'Toast header',
-      content: 'Data logged in console',
-      variant: ToastVariant.Info,
-    });
 
   const saveCreative = async () => {
     if (!editor || !bannerId) return;
@@ -184,7 +175,6 @@ export default function CreativeEditor() {
         });
 
         if (!response.ok) throw new Error('Failed to update creative');
-        showToast('creative-saved');
       } else {
         const response = await fetch('/api/creatives', {
           method: 'POST',
@@ -199,7 +189,6 @@ export default function CreativeEditor() {
         if (data) {
           setCreativeId(data.id);
           router.replace(`/creatives/${data.id}`);
-          showToast('creative-created');
         }
       }
     } catch (error) {
