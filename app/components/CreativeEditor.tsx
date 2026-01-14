@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Editor } from 'grapesjs';
 import GrapesJsStudio from '@grapesjs/studio-sdk/react';
@@ -16,28 +16,46 @@ export default function CreativeEditor() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const templateDataRef = useRef<{ projectData: unknown; name: string } | null>(null);
+  const creativeDataRef = useRef<{ projectData: unknown; name: string; bannerId: string } | null>(null);
 
-  const loadTemplate = useCallback(async (templateId: string) => {
+  const loadTemplate = useCallback(async (templateId: string, editorInstance?: Editor) => {
     try {
       const response = await fetch(`/api/banners/${templateId}`);
       if (!response.ok) throw new Error('Failed to load template');
       const data = await response.json();
+
       if (data) {
         setCreativeName(`${data.name} - Creative`);
+        templateDataRef.current = data;
+
+        if (editorInstance && data.projectData) {
+          setTimeout(() => {
+            editorInstance.loadProjectData(data.projectData);
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error loading template:', error);
     }
   }, []);
 
-  const loadCreative = useCallback(async (id: string) => {
+  const loadCreative = useCallback(async (id: string, editorInstance?: Editor) => {
     try {
       const response = await fetch(`/api/creatives/${id}`);
       if (!response.ok) throw new Error('Failed to load creative');
       const data = await response.json();
+
       if (data) {
         setCreativeName(data.name);
         setBannerId(data.bannerId);
+        creativeDataRef.current = data;
+
+        if (editorInstance && data.projectData) {
+          setTimeout(() => {
+            editorInstance.loadProjectData(data.projectData);
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error loading creative:', error);
@@ -47,15 +65,13 @@ export default function CreativeEditor() {
   useEffect(() => {
     const id = params?.id as string | undefined;
     const templateId = searchParams.get('templateId');
-    
+
     if (id) {
       setCreativeId(id);
-      loadCreative(id);
     } else if (templateId) {
       setBannerId(templateId);
-      loadTemplate(templateId);
     }
-  }, [params, searchParams, loadCreative, loadTemplate]);
+  }, [params, searchParams]);
 
   useEffect(() => {
     const originalError = console.error;
@@ -77,28 +93,13 @@ export default function CreativeEditor() {
   const onReady = async (editor: Editor) => {
     setEditor(editor);
 
-    if (creativeId) {
-      try {
-        const response = await fetch(`/api/creatives/${creativeId}`);
-        if (!response.ok) throw new Error('Failed to load creative');
-        const data = await response.json();
-        if (data && data.projectData) {
-          editor.loadProjectData(data.projectData);
-        }
-      } catch (error) {
-        console.error('Error loading creative data:', error);
-      }
-    } else if (bannerId) {
-      try {
-        const response = await fetch(`/api/banners/${bannerId}`);
-        if (!response.ok) throw new Error('Failed to load template');
-        const data = await response.json();
-        if (data && data.projectData) {
-          editor.loadProjectData(data.projectData);
-        }
-      } catch (error) {
-        console.error('Error loading template data:', error);
-      }
+    const id = params?.id as string | undefined;
+    const templateId = searchParams.get('templateId');
+
+    if (id) {
+      await loadCreative(id, editor);
+    } else if (templateId) {
+      await loadTemplate(templateId, editor);
     }
 
     setTimeout(() => {
