@@ -58,7 +58,6 @@ export default function BannerEditor() {
 
 
   const onReady = async (editor: Editor) => {
-    console.log('Editor loaded', editor);
     setEditor(editor);
 
     if (bannerId) {
@@ -74,7 +73,48 @@ export default function BannerEditor() {
       }
     }
 
+    const setMobileDevice = () => {
+      try {
+        const deviceManager = editor.DeviceManager;
+        const devices = deviceManager.getAll();
+
+        const mobilePortrait = devices.find((d: { id: string | number; name: string; width?: number }) => {
+          const idStr = String(d.id).toLowerCase();
+          const nameStr = String(d.name || '').toLowerCase();
+          const isMobile = idStr.includes('mobile') || nameStr.includes('mobile');
+          const isPortrait = !idStr.includes('landscape') && !nameStr.includes('landscape') && !idStr.includes('tablet');
+          const hasPortraitWidth = d.width && d.width < 600;
+          return isMobile && isPortrait && (hasPortraitWidth || !d.width);
+        });
+
+        if (mobilePortrait) {
+          editor.setDevice(String(mobilePortrait.id));
+          return true;
+        }
+
+        const mobileDevice = devices.find((d: { id: string | number; name: string; width?: number }) => {
+          const idStr = String(d.id).toLowerCase();
+          const nameStr = String(d.name || '').toLowerCase();
+          const isMobile = idStr.includes('mobile') || nameStr.includes('mobile');
+          const isNotLandscape = !idStr.includes('landscape') && !nameStr.includes('landscape');
+          return isMobile && isNotLandscape;
+        });
+
+        if (mobileDevice) {
+          editor.setDevice(String(mobileDevice.id));
+          return true;
+        }
+      } catch (error) {
+        console.error('Error setting mobile device:', error);
+      }
+      return false;
+    };
+
     setTimeout(() => {
+      if (!setMobileDevice()) {
+        setTimeout(() => setMobileDevice(), 500);
+      }
+
       const styleManager = editor.StyleManager;
       const allSectors = styleManager.getSectors();
 
@@ -86,41 +126,48 @@ export default function BannerEditor() {
         set: (key: string, value: unknown) => void;
       }
 
-      console.log('All sectors:', allSectors.map((s: Sector) => ({
-        id: s.getId(),
-        name: s.getName ? s.getName() : s.get('name'),
-        label: s.getLabel ? s.getLabel() : s.get('label'),
-      })));
+      // console.log('All sectors:', allSectors.map((s: Sector) => ({
+      //   id: s.getId(),
+      //   name: s.getName ? s.getName() : s.get('name'),
+      //   label: s.getLabel ? s.getLabel() : s.get('label'),
+      // })));
 
-      allSectors.forEach((sector: Sector) => {
-        const sectorId = sector.getId();
-        const sectorName = sector.getName ? sector.getName() : sector.get('name');
-        const sectorLabel = sector.getLabel ? sector.getLabel() : sector.get('label');
+      // allSectors.forEach((sector: Sector) => {
+      //   if (!sector || typeof sector.getId !== 'function') {
+      //     return;
+      //   }
+      //   
+      //   const sectorId = sector.getId();
+      //   const sectorName = sector.getName ? sector.getName() : sector.get('name');
+      //   const sectorLabel = sector.getLabel ? sector.getLabel() : sector.get('label');
 
-        const isTypography =
-          sectorId?.toLowerCase().includes('typography') ||
-          sectorName?.toLowerCase().includes('typography') ||
-          sectorLabel?.toLowerCase().includes('typography') ||
-          sectorId === 'typography' ||
-          sectorName === 'Typography' ||
-          sectorLabel === 'Typography';
+      //   const isTypography =
+      //     sectorId?.toLowerCase().includes('typography') ||
+      //     sectorName?.toLowerCase().includes('typography') ||
+      //     sectorLabel?.toLowerCase().includes('typography') ||
+      //     sectorId === 'typography' ||
+      //     sectorName === 'Typography' ||
+      //     sectorLabel === 'Typography';
 
-        if (isTypography) {
-          try {
-            sector.set('visible', false);
-            styleManager.removeSector(sectorId);
-            console.log('Typography sector hidden:', sectorId);
-          } catch (e) {
-            console.log('Error hiding typography sector:', e);
-          }
-        }
-      });
+      //   if (isTypography) {
+      //     try {
+      //       sector.set('visible', false);
+      //       styleManager.removeSector(sectorId);
+      //       console.log('Typography sector hidden:', sectorId);
+      //     } catch (e) {
+      //       console.log('Error hiding typography sector:', e);
+      //     }
+      //   }
+      // });
 
-      const typographyElement = document.querySelector('.gjs-sm-sector[data-name*="typography" i], .gjs-sm-sector-title:has-text("Typography")');
-      if (typographyElement) {
-        (typographyElement as HTMLElement).style.display = 'none';
-        (typographyElement as HTMLElement).parentElement?.setAttribute('style', 'display: none !important');
-      }
+      // const typographyElements = document.querySelectorAll('.gjs-sm-sector[data-name*="typography" i], .gjs-sm-sector-title');
+      // typographyElements.forEach((element) => {
+      //   const textContent = element.textContent?.toLowerCase() || '';
+      //   if (textContent.includes('typography')) {
+      //     (element as HTMLElement).style.display = 'none';
+      //     (element as HTMLElement).parentElement?.setAttribute('style', 'display: none !important');
+      //   }
+      // });
     }, 300);
 
     const blockManager = editor.BlockManager;
