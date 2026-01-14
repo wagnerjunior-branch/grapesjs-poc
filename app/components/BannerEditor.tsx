@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Editor } from 'grapesjs';
 import GrapesJsStudio, {
   StudioCommands,
@@ -9,8 +10,34 @@ import GrapesJsStudio, {
 
 import '@grapesjs/studio-sdk/style';
 
-export default function Home() {
+export default function BannerEditor() {
   const [editor, setEditor] = useState<Editor>();
+  const [bannerId, setBannerId] = useState<string | null>(null);
+  const [bannerName, setBannerName] = useState('Untitled Banner');
+  const [saving, setSaving] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const loadBanner = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/banners/${id}`);
+      if (!response.ok) throw new Error('Failed to load banner');
+      const data = await response.json();
+      if (data) {
+        setBannerName(data.name);
+      }
+    } catch (error) {
+      console.error('Error loading banner:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      setBannerId(id);
+      loadBanner(id);
+    }
+  }, [searchParams, loadBanner]);
 
   useEffect(() => {
     const originalError = console.error;
@@ -29,21 +56,43 @@ export default function Home() {
     };
   }, []);
 
-  const onReady = (editor: Editor) => {
+
+  const onReady = async (editor: Editor) => {
     console.log('Editor loaded', editor);
     setEditor(editor);
+
+    if (bannerId) {
+      try {
+        const response = await fetch(`/api/banners/${bannerId}`);
+        if (!response.ok) throw new Error('Failed to load banner');
+        const data = await response.json();
+        if (data && data.projectData) {
+          editor.loadProjectData(data.projectData);
+        }
+      } catch (error) {
+        console.error('Error loading banner data:', error);
+      }
+    }
 
     setTimeout(() => {
       const styleManager = editor.StyleManager;
       const allSectors = styleManager.getSectors();
 
-      console.log('All sectors:', allSectors.map((s: any) => ({
+      interface Sector {
+        getId: () => string;
+        getName?: () => string;
+        getLabel?: () => string;
+        get: (key: string) => string;
+        set: (key: string, value: unknown) => void;
+      }
+
+      console.log('All sectors:', allSectors.map((s: Sector) => ({
         id: s.getId(),
         name: s.getName ? s.getName() : s.get('name'),
         label: s.getLabel ? s.getLabel() : s.get('label'),
       })));
 
-      allSectors.forEach((sector: any) => {
+      allSectors.forEach((sector: Sector) => {
         const sectorId = sector.getId();
         const sectorName = sector.getName ? sector.getName() : sector.get('name');
         const sectorLabel = sector.getLabel ? sector.getLabel() : sector.get('label');
@@ -226,10 +275,81 @@ export default function Home() {
     }
   };
 
+  const saveBanner = async () => {
+    if (!editor) return;
+
+    try {
+      setSaving(true);
+      const projectData = editor.getProjectData();
+      const html = editor.getHtml();
+      const css = editor.getCss();
+
+      const bannerData = {
+        name: bannerName,
+        projectData,
+        html,
+        css,
+      };
+
+      if (bannerId) {
+        const response = await fetch(`/api/banners/${bannerId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bannerData),
+        });
+
+        if (!response.ok) throw new Error('Failed to update banner');
+        showToast('banner-saved');
+      } else {
+        const response = await fetch('/api/banners', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bannerData),
+        });
+
+        if (!response.ok) throw new Error('Failed to create banner');
+        const data = await response.json();
+        if (data) {
+          setBannerId(data.id);
+          router.replace(`/editor?id=${data.id}`);
+          showToast('banner-created');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving banner:', error);
+      alert('Failed to save banner');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="flex h-screen flex-col justify-between p-5 gap-2">
-      <div className="p-1 flex gap-5">
-        <div className="font-bold">SDK example Next.js</div>
+      <div className="p-1 flex gap-5 items-center">
+        <button
+          onClick={() => router.push('/')}
+          className="border rounded px-3 py-1 hover:bg-gray-100"
+        >
+          ← Back to List
+        </button>
+        <input
+          type="text"
+          value={bannerName}
+          onChange={(e) => setBannerName(e.target.value)}
+          className="border rounded px-3 py-1 flex-1 max-w-xs"
+          placeholder="Banner name"
+        />
+        <button
+          onClick={saveBanner}
+          disabled={saving}
+          className="bg-blue-600 text-white rounded px-4 py-1 hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Banner'}
+        </button>
         <button className="border rounded px-2" onClick={getProjetData}>
           Log Project Data
         </button>

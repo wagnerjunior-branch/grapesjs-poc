@@ -1,5 +1,5 @@
-import BannerEditor from './components/BannerEditor';
+import BannerList from './components/BannerList';
 
 export default function Home() {
-  return <BannerEditor />;
+  return <BannerList />;
 }

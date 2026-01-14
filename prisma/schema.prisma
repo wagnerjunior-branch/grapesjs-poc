@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  name        String
+  projectData Json     @map("project_data")
+  html        String   @db.Text
+  css         String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("banners")
+  @@index([createdAt(sort: Desc)])
+}
