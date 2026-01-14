@@ -19,3 +19,18 @@ model Banner {
   @@map("banners")
   @@index([createdAt(sort: Desc)])
 }
+
+model Creative {
+  id          String   @id @default(uuid())
+  name        String
+  bannerId    String   @map("banner_id")
+  projectData Json     @map("project_data")
+  html        String   @db.Text
+  css         String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("creatives")
+  @@index([createdAt(sort: Desc)])
+  @@index([bannerId])
+}

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface Banner {
+interface Creative {
   id: string;
   name: string;
+  bannerId: string;
   projectData: Record<string, unknown>;
   html: string;
   css: string;
@@ -13,7 +14,7 @@ interface Banner {
   updatedAt: string;
 }
 
-function BannerPreview({ html, css }: { html: string; css: string }) {
+function CreativePreview({ html, css }: { html: string; css: string }) {
   const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
               }}
               sandbox="allow-same-origin"
               scrolling="auto"
-              title="Banner Preview"
+              title="Creative Preview"
             />
           </div>
         </div>
@@ -102,50 +103,50 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
   );
 }
 
-export default function BannerList() {
-  const [banners, setBanners] = useState<Banner[]>([]);
+export default function CreativeList() {
+  const [creatives, setCreatives] = useState<Creative[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    loadBanners();
+    loadCreatives();
   }, []);
 
-  const loadBanners = async () => {
+  const loadCreatives = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/banners');
-      if (!response.ok) throw new Error('Failed to load banners');
+      const response = await fetch('/api/creatives');
+      if (!response.ok) throw new Error('Failed to load creatives');
       const data = await response.json();
-      setBanners(data);
+      setCreatives(data);
     } catch (error) {
-      console.error('Error loading banners:', error);
+      console.error('Error loading creatives:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this banner?')) {
+    if (!confirm('Are you sure you want to delete this creative?')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/banners/${id}`, {
+      const response = await fetch(`/api/creatives/${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Failed to delete banner');
-      loadBanners();
+      if (!response.ok) throw new Error('Failed to delete creative');
+      loadCreatives();
     } catch (error) {
-      console.error('Error deleting banner:', error);
-      alert('Failed to delete banner');
+      console.error('Error deleting creative:', error);
+      alert('Failed to delete creative');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading banners...</div>
+        <div className="text-lg">Loading creatives...</div>
       </div>
     );
   }
@@ -154,57 +155,57 @@ export default function BannerList() {
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Banner Templates</h1>
+          <h1 className="text-3xl font-bold">Creatives</h1>
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/creatives')}
+              onClick={() => router.push('/')}
               className="border rounded px-4 py-2 hover:bg-gray-100"
             >
-              View Creatives
+              View Templates
             </button>
             <button
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/creatives/new')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Create New Banner
+              Create New Creative
             </button>
           </div>
         </div>
 
-        {banners.length === 0 ? (
+        {creatives.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No banners found</p>
+            <p className="text-gray-500 mb-4">No creatives found</p>
             <button
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/creatives/new')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Create Your First Banner
+              Create Your First Creative
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {banners.map((banner) => (
+            {creatives.map((creative) => (
               <div
-                key={banner.id}
+                key={creative.id}
                 className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white flex flex-col"
               >
-                <BannerPreview html={banner.html} css={banner.css} />
+                <CreativePreview html={creative.html} css={creative.css} />
                 <div className="p-4 pt-0 flex flex-col flex-1">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold mb-2">{banner.name}</h2>
+                    <h2 className="text-xl font-semibold mb-2">{creative.name}</h2>
                     <p className="text-sm text-gray-500">
-                      Created: {new Date(banner.createdAt).toLocaleDateString()}
+                      Created: {new Date(creative.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2 mt-auto">
                     <button
-                      onClick={() => router.push(`/editor?id=${banner.id}`)}
+                      onClick={() => router.push(`/creatives/${creative.id}`)}
                       className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
                     >
                       Open
                     </button>
                     <button
-                      onClick={() => handleDelete(banner.id)}
+                      onClick={() => handleDelete(creative.id)}
                       className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
                     >
                       Delete

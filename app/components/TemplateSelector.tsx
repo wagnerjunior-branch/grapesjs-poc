@@ -102,7 +102,7 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
   );
 }
 
-export default function BannerList() {
+export default function TemplateSelector() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -125,27 +125,14 @@ export default function BannerList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this banner?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/banners/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete banner');
-      loadBanners();
-    } catch (error) {
-      console.error('Error deleting banner:', error);
-      alert('Failed to delete banner');
-    }
+  const handleSelectTemplate = (bannerId: string) => {
+    router.push(`/creatives/new?templateId=${bannerId}`);
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading banners...</div>
+        <div className="text-lg">Loading templates...</div>
       </div>
     );
   }
@@ -154,31 +141,27 @@ export default function BannerList() {
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Banner Templates</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/creatives')}
-              className="border rounded px-4 py-2 hover:bg-gray-100"
-            >
-              View Creatives
-            </button>
-            <button
-              onClick={() => router.push('/editor')}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create New Banner
-            </button>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Select Template</h1>
+            <p className="text-gray-600">Choose a banner template to create a new creative</p>
           </div>
+          <button
+            onClick={() => router.push('/creatives')}
+            className="border rounded px-4 py-2 hover:bg-gray-100"
+          >
+            Back to Creatives
+          </button>
         </div>
 
         {banners.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No banners found</p>
+            <p className="text-gray-500 mb-4">No templates found</p>
+            <p className="text-sm text-gray-400 mb-4">Create a banner template first</p>
             <button
               onClick={() => router.push('/editor')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Create Your First Banner
+              Create Template
             </button>
           </div>
         ) : (
@@ -186,7 +169,8 @@ export default function BannerList() {
             {banners.map((banner) => (
               <div
                 key={banner.id}
-                className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white flex flex-col"
+                className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white flex flex-col cursor-pointer"
+                onClick={() => handleSelectTemplate(banner.id)}
               >
                 <BannerPreview html={banner.html} css={banner.css} />
                 <div className="p-4 pt-0 flex flex-col flex-1">
@@ -196,20 +180,15 @@ export default function BannerList() {
                       Created: {new Date(banner.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex gap-2 mt-auto">
-                    <button
-                      onClick={() => router.push(`/editor?id=${banner.id}`)}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Open
-                    </button>
-                    <button
-                      onClick={() => handleDelete(banner.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectTemplate(banner.id);
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Use This Template
+                  </button>
                 </div>
               </div>
             ))}
