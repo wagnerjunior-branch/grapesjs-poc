@@ -327,7 +327,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
         <GrapesJsStudio
           onReady={onReady}
           options={{
-            licenseKey: 'YOUR_LICENSE_KEY',
+            licenseKey: process.env.NEXT_PUBLIC_GRAPESJS_LICENSE_KEY || '',
             pages: false,
             project: {
               type: 'web',
