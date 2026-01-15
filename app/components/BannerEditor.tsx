@@ -44,6 +44,10 @@ export default function BannerEditor() {
     const id = searchParams.get('id');
     if (id) {
       setBannerId(id);
+    } else {
+      setBannerId(null);
+      setBannerName('Untitled Banner');
+      bannerDataRef.current = null;
     }
   }, [searchParams]);
 
@@ -70,6 +74,10 @@ export default function BannerEditor() {
     const id = searchParams.get('id');
     if (id) {
       await loadBanner(id, editor);
+    } else {
+      bannerDataRef.current = null;
+      editor.setComponents('');
+      editor.setStyle('');
     }
 
     const setMobileDevice = () => {
