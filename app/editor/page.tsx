@@ -20,6 +20,8 @@ const DEFAULT_SETTINGS = {
   showSpaceSection: true,
   showPositionSection: true,
   showEffectsSection: true,
+  showBackgroundSection: true,
+  showBordersSection: true,
 };
 
 async function getEditorSettings() {

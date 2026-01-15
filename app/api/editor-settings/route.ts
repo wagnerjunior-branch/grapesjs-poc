@@ -19,6 +19,8 @@ const DEFAULT_SETTINGS = {
   showSpaceSection: true,
   showPositionSection: true,
   showEffectsSection: true,
+  showBackgroundSection: true,
+  showBordersSection: true,
 };
 
 export async function GET() {
@@ -75,6 +77,8 @@ export async function POST(request: NextRequest) {
       showSpaceSection,
       showPositionSection,
       showEffectsSection,
+      showBackgroundSection,
+      showBordersSection,
     } = body;
 
     const updatedSettings = {
@@ -95,6 +99,8 @@ export async function POST(request: NextRequest) {
       showSpaceSection: showSpaceSection ?? DEFAULT_SETTINGS.showSpaceSection,
       showPositionSection: showPositionSection ?? DEFAULT_SETTINGS.showPositionSection,
       showEffectsSection: showEffectsSection ?? DEFAULT_SETTINGS.showEffectsSection,
+      showBackgroundSection: showBackgroundSection ?? DEFAULT_SETTINGS.showBackgroundSection,
+      showBordersSection: showBordersSection ?? DEFAULT_SETTINGS.showBordersSection,
     };
 
     let settingsRecord = await prisma.editorSettings.findFirst({

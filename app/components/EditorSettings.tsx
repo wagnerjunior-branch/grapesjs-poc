@@ -23,6 +23,8 @@ interface EditorSettings {
   showSpaceSection: boolean;
   showPositionSection: boolean;
   showEffectsSection: boolean;
+  showBackgroundSection: boolean;
+  showBordersSection: boolean;
 }
 
 interface EditorSettingsProps {
@@ -235,6 +237,16 @@ export default function EditorSettings({ initialSettings, onSave }: EditorSettin
             label="Effects Section"
             checked={settings.showEffectsSection}
             onChange={(checked) => updateSetting('showEffectsSection', checked)}
+          />
+          <ToggleSwitch
+            label="Background Section"
+            checked={settings.showBackgroundSection}
+            onChange={(checked) => updateSetting('showBackgroundSection', checked)}
+          />
+          <ToggleSwitch
+            label="Borders Section"
+            checked={settings.showBordersSection}
+            onChange={(checked) => updateSetting('showBordersSection', checked)}
           />
         </div>
       </div>

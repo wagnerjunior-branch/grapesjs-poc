@@ -29,6 +29,8 @@ interface EditorSettingsType {
   showSpaceSection: boolean;
   showPositionSection: boolean;
   showEffectsSection: boolean;
+  showBackgroundSection: boolean;
+  showBordersSection: boolean;
 }
 
 interface BannerEditorProps {
@@ -135,6 +137,8 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       'gs-space': settings.showSpaceSection,
       'gs-position': settings.showPositionSection,
       'gs-effects': settings.showEffectsSection,
+      'gs-background': settings.showBackgroundSection,
+      'gs-borders': settings.showBordersSection,
     };
 
     sectors.forEach((sector: Record<string, unknown>) => {
