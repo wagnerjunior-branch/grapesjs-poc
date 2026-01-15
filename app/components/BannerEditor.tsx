@@ -221,48 +221,6 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       editor.setStyle('');
     }
 
-    const setMobileDevice = () => {
-      try {
-        const deviceManager = editor.DeviceManager;
-        const devices = deviceManager.getAll();
-
-        const mobilePortrait = devices.find((d: { id: string | number; name: string; width?: number }) => {
-          const idStr = String(d.id).toLowerCase();
-          const nameStr = String(d.name || '').toLowerCase();
-          const isMobile = idStr.includes('mobile') || nameStr.includes('mobile');
-          const isPortrait = !idStr.includes('landscape') && !nameStr.includes('landscape') && !idStr.includes('tablet');
-          const hasPortraitWidth = d.width && d.width < 600;
-          return isMobile && isPortrait && (hasPortraitWidth || !d.width);
-        });
-
-        if (mobilePortrait) {
-          editor.setDevice(String(mobilePortrait.id));
-          return true;
-        }
-
-        const mobileDevice = devices.find((d: { id: string | number; name: string; width?: number }) => {
-          const idStr = String(d.id).toLowerCase();
-          const nameStr = String(d.name || '').toLowerCase();
-          const isMobile = idStr.includes('mobile') || nameStr.includes('mobile');
-          const isNotLandscape = !idStr.includes('landscape') && !nameStr.includes('landscape');
-          return isMobile && isNotLandscape;
-        });
-
-        if (mobileDevice) {
-          editor.setDevice(String(mobileDevice.id));
-          return true;
-        }
-      } catch (error) {
-        console.error('Error setting mobile device:', error);
-      }
-      return false;
-    };
-
-    setTimeout(() => {
-      if (!setMobileDevice()) {
-        setTimeout(() => setMobileDevice(), 500);
-      }
-    }, 300);
 
     const blockManager = editor.BlockManager;
 
@@ -373,6 +331,28 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
             pages: false,
             project: {
               type: 'web',
+            },
+            devices: {
+              default: [
+                {
+                  id: 'desktop',
+                  name: 'Desktop',
+                  width: '',
+                },
+                {
+                  id: 'tablet',
+                  name: 'Tablet',
+                  width: '770px',
+                  widthMedia: '992px',
+                },
+                {
+                  id: 'mobile',
+                  name: 'Mobile',
+                  width: '320px',
+                  widthMedia: '768px',
+                },
+              ],
+              selected: 'mobile',
             },
           }}
         />
