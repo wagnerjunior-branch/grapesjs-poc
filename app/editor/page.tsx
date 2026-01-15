@@ -3,17 +3,6 @@ import BannerEditor from '../components/BannerEditor';
 import { prisma } from '../../lib/prisma';
 
 const DEFAULT_SETTINGS = {
-  showLayerManager: true,
-  showBlockManager: true,
-  showStylesManager: true,
-  showTraitsManager: true,
-  showDeviceManager: true,
-  showCommands: true,
-  showUndoRedo: true,
-  showFullscreen: true,
-  showCodeView: true,
-  showPreview: true,
-  showCanvasToolbar: true,
   showTypographySection: true,
   showLayoutSection: true,
   showSizeSection: true,

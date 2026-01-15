@@ -6,17 +6,6 @@ import { Switch } from './ui/switch';
 
 interface EditorSettings {
   id: string;
-  showLayerManager: boolean;
-  showBlockManager: boolean;
-  showStylesManager: boolean;
-  showTraitsManager: boolean;
-  showDeviceManager: boolean;
-  showCommands: boolean;
-  showUndoRedo: boolean;
-  showFullscreen: boolean;
-  showCodeView: boolean;
-  showPreview: boolean;
-  showCanvasToolbar: boolean;
   showTypographySection: boolean;
   showLayoutSection: boolean;
   showSizeSection: boolean;
@@ -148,64 +137,6 @@ export default function EditorSettings({ initialSettings, onSave }: EditorSettin
       </div>
 
       <div className="space-y-1">
-        <ToggleSwitch
-          label="Layer Manager"
-          checked={settings.showLayerManager}
-          onChange={(checked) => updateSetting('showLayerManager', checked)}
-        />
-        <ToggleSwitch
-          label="Block Manager"
-          checked={settings.showBlockManager}
-          onChange={(checked) => updateSetting('showBlockManager', checked)}
-        />
-        <ToggleSwitch
-          label="Styles Manager"
-          checked={settings.showStylesManager}
-          onChange={(checked) => updateSetting('showStylesManager', checked)}
-        />
-        <ToggleSwitch
-          label="Traits Manager"
-          checked={settings.showTraitsManager}
-          onChange={(checked) => updateSetting('showTraitsManager', checked)}
-        />
-        <ToggleSwitch
-          label="Device Manager"
-          checked={settings.showDeviceManager}
-          onChange={(checked) => updateSetting('showDeviceManager', checked)}
-        />
-        <ToggleSwitch
-          label="Commands"
-          checked={settings.showCommands}
-          onChange={(checked) => updateSetting('showCommands', checked)}
-        />
-        <ToggleSwitch
-          label="Undo/Redo"
-          checked={settings.showUndoRedo}
-          onChange={(checked) => updateSetting('showUndoRedo', checked)}
-        />
-        <ToggleSwitch
-          label="Fullscreen"
-          checked={settings.showFullscreen}
-          onChange={(checked) => updateSetting('showFullscreen', checked)}
-        />
-        <ToggleSwitch
-          label="Code View"
-          checked={settings.showCodeView}
-          onChange={(checked) => updateSetting('showCodeView', checked)}
-        />
-        <ToggleSwitch
-          label="Preview"
-          checked={settings.showPreview}
-          onChange={(checked) => updateSetting('showPreview', checked)}
-        />
-        <ToggleSwitch
-          label="Canvas Toolbar"
-          checked={settings.showCanvasToolbar}
-          onChange={(checked) => updateSetting('showCanvasToolbar', checked)}
-        />
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-gray-300">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Style Manager Sections</h3>
         <div className="space-y-1">
           <ToggleSwitch

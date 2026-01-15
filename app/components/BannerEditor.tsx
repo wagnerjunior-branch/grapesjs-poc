@@ -12,17 +12,6 @@ import '@grapesjs/studio-sdk/style';
 import EditorSettings from './EditorSettings';
 
 interface EditorSettingsType {
-  showLayerManager: boolean;
-  showBlockManager: boolean;
-  showStylesManager: boolean;
-  showTraitsManager: boolean;
-  showDeviceManager: boolean;
-  showCommands: boolean;
-  showUndoRedo: boolean;
-  showFullscreen: boolean;
-  showCodeView: boolean;
-  showPreview: boolean;
-  showCanvasToolbar: boolean;
   showTypographySection: boolean;
   showLayoutSection: boolean;
   showSizeSection: boolean;
@@ -183,89 +172,8 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
     });
   }, [hideSectorViaDOM]);
 
-  const loadEditorSettings = useCallback(async () => {
-    try {
-      const response = await fetch('/api/editor-settings');
-      if (response.ok) {
-        const data = await response.json();
-        setEditorSettings(data);
-      }
-    } catch (error) {
-      console.error('Error loading editor settings:', error);
-    }
-  }, []);
-
   useEffect(() => {
     if (editor && editorSettings) {
-      const panels = editor.Panels;
-      const commands = editor.Commands;
-
-      if (!editorSettings.showLayerManager) {
-        const layerManager = panels.getPanel('layers');
-        if (layerManager) {
-          (layerManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showBlockManager) {
-        const blockManager = panels.getPanel('blocks');
-        if (blockManager) {
-          (blockManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showStylesManager) {
-        const stylesManager = panels.getPanel('styles');
-        if (stylesManager) {
-          (stylesManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showTraitsManager) {
-        const traitsManager = panels.getPanel('traits');
-        if (traitsManager) {
-          (traitsManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showDeviceManager) {
-        const deviceManager = panels.getPanel('devices');
-        if (deviceManager) {
-          (deviceManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showCommands) {
-        const commandsPanel = panels.getPanel('commands');
-        if (commandsPanel) {
-          (commandsPanel as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
-      if (!editorSettings.showUndoRedo) {
-        commands.stop('core:undo');
-        commands.stop('core:redo');
-      }
-
-      if (!editorSettings.showFullscreen) {
-        commands.stop('core:fullscreen');
-      }
-
-      if (!editorSettings.showCodeView) {
-        commands.stop('core:open-code');
-      }
-
-      if (!editorSettings.showPreview) {
-        commands.stop('core:preview');
-      }
-
-      if (!editorSettings.showCanvasToolbar) {
-        const canvasToolbar = panels.getPanel('canvas-toolbar');
-        if (canvasToolbar) {
-          (canvasToolbar as { set: (prop: string, value: boolean) => void }).set('visible', false);
-        }
-      }
-
       const styleManager = editor.StyleManager;
       if (styleManager) {
         setTimeout(() => {
@@ -364,65 +272,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       content: `<button class="custom-btn-primary" style="background-color: white; border: none; border-radius: 25px; padding: 4px 12px; cursor: pointer; height: 25px; min-width: 83px; align-self: auto; display: flex; justify-content: center; align-items: center; color: #0072c3; font-size: 10px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 400;">Open App</button>`,
     });
 
-    blockManager.add('custom-button-secondary', {
-      label: 'Button Secondary',
-      category: 'Custom Buttons',
-      content: {
-        type: 'button',
-        classes: ['custom-btn-secondary'],
-        content: 'Secondary',
-        style: {
-          'background-color': 'white',
-          'color': '#0072c3',
-          'border': '2px solid #0072c3',
-          'border-radius': '25px',
-          'padding': '8px 24px',
-          'cursor': 'pointer',
-          'font-size': '14px',
-          'font-weight': '500',
-        },
-      },
-    });
 
-    blockManager.add('custom-button-outline', {
-      label: 'Button Outline',
-      category: 'Custom Buttons',
-      content: {
-        type: 'button',
-        classes: ['custom-btn-outline'],
-        content: 'Outline',
-        style: {
-          'background-color': 'transparent',
-          'color': '#0072c3',
-          'border': '1px solid #0072c3',
-          'border-radius': '8px',
-          'padding': '10px 20px',
-          'cursor': 'pointer',
-          'font-size': '14px',
-        },
-      },
-    });
-
-    blockManager.add('custom-button-rounded', {
-      label: 'Button Rounded',
-      category: 'Custom Buttons',
-      content: {
-        type: 'button',
-        classes: ['custom-btn-rounded'],
-        content: 'Rounded',
-        style: {
-          'background-color': '#0072c3',
-          'color': 'white',
-          'border': 'none',
-          'border-radius': '50px',
-          'padding': '12px 32px',
-          'cursor': 'pointer',
-          'font-size': '16px',
-          'font-weight': '600',
-          'box-shadow': '0 4px 6px rgba(0,0,0,0.1)',
-        },
-      },
-    });
   };
 
   const showToast = (id: string, content: string) =>
@@ -520,15 +370,9 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
           onReady={onReady}
           options={{
             licenseKey: 'YOUR_LICENSE_KEY',
+            pages: false,
             project: {
               type: 'web',
-              default: {
-                pages: [
-                  {
-                    name: 'Mobile Notification',
-                  },
-                ],
-              },
             },
           }}
         />

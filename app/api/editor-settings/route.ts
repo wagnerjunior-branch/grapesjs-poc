@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 
 const DEFAULT_SETTINGS = {
-  showLayerManager: true,
-  showBlockManager: true,
-  showStylesManager: true,
-  showTraitsManager: true,
-  showDeviceManager: true,
-  showCommands: true,
-  showUndoRedo: true,
-  showFullscreen: true,
-  showCodeView: true,
-  showPreview: true,
-  showCanvasToolbar: true,
   showTypographySection: true,
   showLayoutSection: true,
   showSizeSection: true,
@@ -60,17 +49,6 @@ export async function POST(request: NextRequest) {
 
     const {
       id,
-      showLayerManager,
-      showBlockManager,
-      showStylesManager,
-      showTraitsManager,
-      showDeviceManager,
-      showCommands,
-      showUndoRedo,
-      showFullscreen,
-      showCodeView,
-      showPreview,
-      showCanvasToolbar,
       showTypographySection,
       showLayoutSection,
       showSizeSection,
@@ -82,17 +60,6 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const updatedSettings = {
-      showLayerManager: showLayerManager ?? DEFAULT_SETTINGS.showLayerManager,
-      showBlockManager: showBlockManager ?? DEFAULT_SETTINGS.showBlockManager,
-      showStylesManager: showStylesManager ?? DEFAULT_SETTINGS.showStylesManager,
-      showTraitsManager: showTraitsManager ?? DEFAULT_SETTINGS.showTraitsManager,
-      showDeviceManager: showDeviceManager ?? DEFAULT_SETTINGS.showDeviceManager,
-      showCommands: showCommands ?? DEFAULT_SETTINGS.showCommands,
-      showUndoRedo: showUndoRedo ?? DEFAULT_SETTINGS.showUndoRedo,
-      showFullscreen: showFullscreen ?? DEFAULT_SETTINGS.showFullscreen,
-      showCodeView: showCodeView ?? DEFAULT_SETTINGS.showCodeView,
-      showPreview: showPreview ?? DEFAULT_SETTINGS.showPreview,
-      showCanvasToolbar: showCanvasToolbar ?? DEFAULT_SETTINGS.showCanvasToolbar,
       showTypographySection: showTypographySection ?? DEFAULT_SETTINGS.showTypographySection,
       showLayoutSection: showLayoutSection ?? DEFAULT_SETTINGS.showLayoutSection,
       showSizeSection: showSizeSection ?? DEFAULT_SETTINGS.showSizeSection,
