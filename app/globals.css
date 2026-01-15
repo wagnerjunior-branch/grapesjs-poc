@@ -24,3 +24,28 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Switch animations */
+button[role="switch"] {
+  transition: background-color 0.2s ease-in-out;
+}
+
+button[role="switch"][data-state="checked"] {
+  background-color: rgb(37 99 235) !important;
+}
+
+button[role="switch"][data-state="unchecked"] {
+  background-color: rgb(229 231 235) !important;
+}
+
+button[role="switch"] span {
+  transition: transform 0.2s ease-in-out;
+}
+
+button[role="switch"] span[data-state="checked"] {
+  transform: translateX(1.25rem) !important;
+}
+
+button[role="switch"] span[data-state="unchecked"] {
+  transform: translateX(0) !important;
+}

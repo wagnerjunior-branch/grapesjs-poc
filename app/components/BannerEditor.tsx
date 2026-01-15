@@ -9,12 +9,39 @@ import GrapesJsStudio, {
 } from '@grapesjs/studio-sdk/react';
 
 import '@grapesjs/studio-sdk/style';
+import EditorSettings from './EditorSettings';
 
-export default function BannerEditor() {
+interface EditorSettingsType {
+  showLayerManager: boolean;
+  showBlockManager: boolean;
+  showStylesManager: boolean;
+  showTraitsManager: boolean;
+  showDeviceManager: boolean;
+  showCommands: boolean;
+  showUndoRedo: boolean;
+  showFullscreen: boolean;
+  showCodeView: boolean;
+  showPreview: boolean;
+  showCanvasToolbar: boolean;
+  showTypographySection: boolean;
+  showLayoutSection: boolean;
+  showSizeSection: boolean;
+  showSpaceSection: boolean;
+  showPositionSection: boolean;
+  showEffectsSection: boolean;
+}
+
+interface BannerEditorProps {
+  initialSettings: EditorSettingsType & { id: string };
+}
+
+export default function BannerEditor({ initialSettings }: BannerEditorProps) {
   const [editor, setEditor] = useState<Editor>();
   const [bannerId, setBannerId] = useState<string | null>(null);
   const [bannerName, setBannerName] = useState('Untitled Banner');
   const [saving, setSaving] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editorSettings, setEditorSettings] = useState<EditorSettingsType>(initialSettings);
   const searchParams = useSearchParams();
   const router = useRouter();
   const bannerDataRef = useRef<{ projectData: unknown; name: string } | null>(null);
@@ -51,6 +78,199 @@ export default function BannerEditor() {
     }
   }, [searchParams]);
 
+  const hideSectorViaDOM = useCallback((sectorId: string) => {
+    const sectorName = sectorId.replace('gs-', '').toLowerCase();
+    const sectorNameCapitalized = sectorName.charAt(0).toUpperCase() + sectorName.slice(1);
+
+    const selectors = [
+      `[data-sector-id="${sectorId}"]`,
+      `[data-sector="${sectorId}"]`,
+      `[id*="${sectorId}"]`,
+      `[id*="${sectorName}"]`,
+      `[class*="${sectorId}"]`,
+      `[class*="${sectorName}"]`,
+    ];
+
+    let sectorEl: HTMLElement | null = null;
+    for (const selector of selectors) {
+      sectorEl = document.querySelector(selector) as HTMLElement;
+      if (sectorEl) break;
+    }
+
+    if (!sectorEl) {
+      const allSectors = Array.from(document.querySelectorAll('[class*="sector"], [data-sector], [id*="sector"]'));
+      sectorEl = allSectors.find((el) => {
+        const text = el.textContent?.toLowerCase() || '';
+        const id = el.id?.toLowerCase() || '';
+        const className = el.className?.toLowerCase() || '';
+        return text.includes(sectorName) ||
+          text.includes(sectorNameCapitalized) ||
+          id.includes(sectorId) ||
+          id.includes(sectorName) ||
+          className.includes(sectorId) ||
+          className.includes(sectorName);
+      }) as HTMLElement;
+    }
+
+    if (sectorEl) {
+      sectorEl.style.display = 'none';
+      const parent = sectorEl.parentElement;
+      if (parent) {
+        parent.style.display = 'none';
+      }
+    }
+  }, []);
+
+  const applyStyleManagerSettings = useCallback((editor: Editor, settings: EditorSettingsType) => {
+    const styleManager = editor.StyleManager;
+    if (!styleManager) return;
+
+    const sectors = styleManager.getSectors();
+    if (!sectors || sectors.length === 0) return;
+
+    const sectorMap: Record<string, boolean> = {
+      'gs-typography': settings.showTypographySection,
+      'gs-layout': settings.showLayoutSection,
+      'gs-size': settings.showSizeSection,
+      'gs-space': settings.showSpaceSection,
+      'gs-position': settings.showPositionSection,
+      'gs-effects': settings.showEffectsSection,
+    };
+
+    sectors.forEach((sector: Record<string, unknown>) => {
+      const sectorId = (sector.id as string) || ((sector.getId as () => string)?.()) || '';
+      const shouldBeVisible = sectorMap[sectorId];
+
+      if (sectorId && shouldBeVisible !== undefined && !shouldBeVisible) {
+        try {
+          const sectorObj = sector as Record<string, unknown>;
+
+          if (sectorObj.set && typeof sectorObj.set === 'function') {
+            (sectorObj.set as (prop: string, value: boolean) => void)('visible', false);
+          } else if (sectorObj.setVisible && typeof sectorObj.setVisible === 'function') {
+            (sectorObj.setVisible as (visible: boolean) => void)(false);
+          } else if ('visible' in sectorObj) {
+            sectorObj.visible = false;
+          }
+
+          setTimeout(() => {
+            const updatedSectors = styleManager.getSectors();
+            const stillVisible = updatedSectors.find((s: Record<string, unknown>) => {
+              const sId = (s.id as string) || ((s.getId as () => string)?.()) || '';
+              return sId === sectorId;
+            });
+
+            if (stillVisible) {
+              const styleManagerApi = styleManager as unknown as Record<string, unknown>;
+              if (styleManagerApi.removeSector && typeof styleManagerApi.removeSector === 'function') {
+                (styleManagerApi.removeSector as (id: string) => void)(sectorId);
+              } else if (sectorObj.remove && typeof sectorObj.remove === 'function') {
+                (sectorObj.remove as () => void)();
+              } else {
+                hideSectorViaDOM(sectorId);
+              }
+            }
+          }, 300);
+        } catch (error) {
+          console.error(`Error hiding sector ${sectorId}:`, error);
+          hideSectorViaDOM(sectorId);
+        }
+      }
+    });
+  }, [hideSectorViaDOM]);
+
+  const loadEditorSettings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/editor-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setEditorSettings(data);
+      }
+    } catch (error) {
+      console.error('Error loading editor settings:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editor && editorSettings) {
+      const panels = editor.Panels;
+      const commands = editor.Commands;
+
+      if (!editorSettings.showLayerManager) {
+        const layerManager = panels.getPanel('layers');
+        if (layerManager) {
+          (layerManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showBlockManager) {
+        const blockManager = panels.getPanel('blocks');
+        if (blockManager) {
+          (blockManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showStylesManager) {
+        const stylesManager = panels.getPanel('styles');
+        if (stylesManager) {
+          (stylesManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showTraitsManager) {
+        const traitsManager = panels.getPanel('traits');
+        if (traitsManager) {
+          (traitsManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showDeviceManager) {
+        const deviceManager = panels.getPanel('devices');
+        if (deviceManager) {
+          (deviceManager as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showCommands) {
+        const commandsPanel = panels.getPanel('commands');
+        if (commandsPanel) {
+          (commandsPanel as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      if (!editorSettings.showUndoRedo) {
+        commands.stop('core:undo');
+        commands.stop('core:redo');
+      }
+
+      if (!editorSettings.showFullscreen) {
+        commands.stop('core:fullscreen');
+      }
+
+      if (!editorSettings.showCodeView) {
+        commands.stop('core:open-code');
+      }
+
+      if (!editorSettings.showPreview) {
+        commands.stop('core:preview');
+      }
+
+      if (!editorSettings.showCanvasToolbar) {
+        const canvasToolbar = panels.getPanel('canvas-toolbar');
+        if (canvasToolbar) {
+          (canvasToolbar as { set: (prop: string, value: boolean) => void }).set('visible', false);
+        }
+      }
+
+      const styleManager = editor.StyleManager;
+      if (styleManager) {
+        setTimeout(() => {
+          applyStyleManagerSettings(editor, editorSettings);
+        }, 100);
+      }
+    }
+  }, [editor, editorSettings, applyStyleManagerSettings]);
+
   useEffect(() => {
     const originalError = console.error;
     console.error = (...args) => {
@@ -70,6 +290,15 @@ export default function BannerEditor() {
 
   const onReady = async (editor: Editor) => {
     setEditor(editor);
+
+    if (editorSettings) {
+      const styleManager = editor.StyleManager;
+      if (styleManager) {
+        setTimeout(() => {
+          applyStyleManagerSettings(editor, editorSettings);
+        }, 100);
+      }
+    }
 
     const id = searchParams.get('id');
     if (id) {
@@ -253,7 +482,7 @@ export default function BannerEditor() {
   };
 
   return (
-    <main className="flex h-screen flex-col justify-between p-5 gap-2">
+    <main className="flex h-screen flex-col justify-between p-5 gap-2 relative">
       <div className="p-1 flex gap-5 items-center">
         <button
           onClick={() => router.push('/')}
@@ -268,6 +497,12 @@ export default function BannerEditor() {
           className="border rounded px-3 py-1 flex-1 max-w-xs"
           placeholder="Banner name"
         />
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="border rounded px-3 py-1 hover:bg-gray-100"
+        >
+          ⚙️ Settings
+        </button>
         <button
           onClick={saveBanner}
           disabled={saving}
@@ -294,6 +529,34 @@ export default function BannerEditor() {
           }}
         />
       </div>
+      {showSettings && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="relative bg-white rounded-lg max-h-[90vh] overflow-y-auto w-full max-w-3xl m-4">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center rounded-t-lg">
+              <h2 className="text-xl font-bold">Editor Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <EditorSettings
+                initialSettings={editorSettings as EditorSettingsType & { id: string }}
+                onSave={async (savedSettings) => {
+                  setEditorSettings(savedSettings);
+                  setShowSettings(false);
+
+                  if (editor) {
+                    window.location.reload();
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

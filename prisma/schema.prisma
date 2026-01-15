@@ -34,3 +34,12 @@ model Creative {
   @@index([createdAt(sort: Desc)])
   @@index([bannerId])
 }
+
+model EditorSettings {
+  id        String   @id @default(uuid())
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("editor_settings")
+}
