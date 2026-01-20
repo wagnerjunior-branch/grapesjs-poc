@@ -1,0 +1,41 @@
+.se-root {
+  --se-radius: 12px;
+  --se-font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  --se-bg: #0b0f17;
+  --se-panel: #111827;
+  --se-border: rgba(255, 255, 255, 0.08);
+  --se-text: rgba(255, 255, 255, 0.9);
+}
+
+.se-root .gjs-one-bg {
+  background-color: var(--se-panel);
+}
+
+.se-root .gjs-two-color {
+  color: var(--se-text);
+}
+
+.se-root .gjs-pn-panel {
+  border-color: var(--se-border);
+  border-radius: var(--se-radius);
+  font-family: var(--se-font-family);
+}
+
+.se-root .gjs-cv-canvas {
+  background-color: var(--se-bg);
+}
+
+.se-root .gjs-sm-sector {
+  border-color: var(--se-border);
+  font-family: var(--se-font-family);
+}
+
+.se-root .gjs-block {
+  border-radius: var(--se-radius);
+  border-color: var(--se-border);
+}
+
+.se-root .gjs-block-label {
+  color: var(--se-text);
+  font-family: var(--se-font-family);
+}

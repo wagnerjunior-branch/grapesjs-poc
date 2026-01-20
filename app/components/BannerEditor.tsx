@@ -3,12 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Editor } from 'grapesjs';
-import GrapesJsStudio, {
+import {
   StudioCommands,
   ToastVariant,
 } from '@grapesjs/studio-sdk/react';
-
-import '@grapesjs/studio-sdk/style';
+import { StudioEditor } from '../../packages/studio-editor/src';
 import EditorSettings from './EditorSettings';
 
 interface EditorSettingsType {
@@ -220,17 +219,6 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       editor.setComponents('');
       editor.setStyle('');
     }
-
-
-    const blockManager = editor.BlockManager;
-
-    blockManager.add('custom-button-primary', {
-      label: 'Open',
-      category: 'Custom Buttons',
-      content: `<button class="custom-btn-primary" style="background-color: white; border: none; border-radius: 25px; padding: 4px 12px; cursor: pointer; height: 25px; min-width: 83px; align-self: auto; display: flex; justify-content: center; align-items: center; color: #0072c3; font-size: 10px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 400;">Open App</button>`,
-    });
-
-
   };
 
   const showToast = (id: string, content: string) =>
@@ -325,7 +313,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
         </button>
       </div>
       <div className="flex-1 w-full h-full overflow-hidden">
-        <GrapesJsStudio
+        <StudioEditor
           onReady={onReady}
           options={{
             licenseKey: process.env.NEXT_PUBLIC_GRAPESJS_LICENSE_KEY || '',
@@ -356,6 +344,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
               selected: 'mobile',
             },
           }}
+          style={{ height: '100%', width: '100%' }}
         />
       </div>
       {showSettings && (
