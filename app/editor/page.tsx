@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import BannerEditor from '../components/BannerEditor';
+import EditorClient from './EditorClient';
 import { prisma } from '../../lib/prisma';
 
 const DEFAULT_SETTINGS = {
@@ -44,16 +44,17 @@ async function getEditorSettings() {
   }
 }
 
-function EditorContent({ initialSettings }: { initialSettings: typeof DEFAULT_SETTINGS & { id: string } }) {
-  return <BannerEditor initialSettings={initialSettings} />;
-}
-
-export default async function EditorPage() {
+export default async function EditorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ editorType?: string; id?: string }>;
+}) {
+  const params = await searchParams;
   const initialSettings = await getEditorSettings();
 
   return (
     <Suspense fallback={<div>Loading editor...</div>}>
-      <EditorContent initialSettings={initialSettings} />
+      <EditorClient searchParams={params} initialSettings={initialSettings} />
     </Suspense>
   );
 }

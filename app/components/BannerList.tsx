@@ -9,6 +9,7 @@ interface Banner {
   projectData: Record<string, unknown>;
   html: string;
   css: string;
+  editorType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -163,7 +164,7 @@ export default function BannerList() {
               View Creatives
             </button>
             <button
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/editor/select')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create New Template
@@ -175,7 +176,7 @@ export default function BannerList() {
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No banners found</p>
             <button
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/editor/select')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Your First Banner
@@ -191,14 +192,29 @@ export default function BannerList() {
                 <BannerPreview html={banner.html} css={banner.css} />
                 <div className="p-4 pt-0 flex flex-col flex-1">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold mb-2">{banner.name}</h2>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h2 className="text-xl font-semibold">{banner.name}</h2>
+                      {banner.editorType && (
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${banner.editorType === 'grapesjs'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                            }`}
+                        >
+                          {banner.editorType === 'grapesjs' ? 'GrapesJS' : 'React Email Editor'}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">
                       Created: {new Date(banner.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2 mt-auto">
                     <button
-                      onClick={() => router.push(`/editor?id=${banner.id}`)}
+                      onClick={() => {
+                        const editorType = banner.editorType || 'grapesjs';
+                        router.push(`/editor?editorType=${editorType}&id=${banner.id}`);
+                      }}
                       className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
                     >
                       Open

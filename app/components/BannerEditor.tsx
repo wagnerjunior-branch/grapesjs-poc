@@ -255,6 +255,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
         projectData,
         html,
         css,
+        editorType: 'grapesjs',
       };
 
       if (bannerId) {

@@ -35,9 +35,9 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, projectData, html, css } = body;
+    const { name, projectData, html, css, editorType } = body;
 
-    if (!name || !projectData || !html || !css) {
+    if (!name || !projectData || !html || css === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -50,7 +50,8 @@ export async function PUT(
         name,
         projectData,
         html,
-        css,
+        css: css || '', // Allow empty string for react-email-editor which uses inline styles
+        editorType: editorType || 'grapesjs',
       },
     });
 

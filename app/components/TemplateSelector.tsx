@@ -189,7 +189,7 @@ export default function TemplateSelector() {
             <p className="text-gray-500 mb-4">No templates found</p>
             <p className="text-sm text-gray-400 mb-4">Create a banner template first</p>
             <button
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/editor/select')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Template
