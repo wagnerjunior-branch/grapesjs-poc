@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import EmailEditor, { EditorRef } from 'react-email-editor';
 
@@ -14,34 +14,27 @@ export default function ReactEmailEditor() {
   const [bannerName, setBannerName] = useState('Untitled Banner');
   const [saving, setSaving] = useState(false);
   const [editorLoaded, setEditorLoaded] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'email' | 'web' | 'popup'>('email');
+  const [settingsId, setSettingsId] = useState<string | null>(null);
   const emailEditorRef = useRef<EditorRef>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  useEffect(() => {
-    const id = searchParams.get('id');
-    if (id) {
-      setBannerId(id);
-      if (editorLoaded) {
-        loadBanner(id);
+  const loadSettings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/react-email-editor-settings');
+      if (!response.ok) throw new Error('Failed to load settings');
+      const data = await response.json();
+      if (data) {
+        setSettingsId(data.id);
+        setDisplayMode(data.displayMode || 'email');
       }
-    } else {
-      setBannerId(null);
-      setBannerName('Untitled Banner');
+    } catch (error) {
+      console.error('Error loading settings:', error);
     }
-  }, [searchParams, editorLoaded]);
+  }, []);
 
-  const onEditorReady = () => {
-    setEditorLoaded(true);
-
-    // Load banner if there's an ID in the URL
-    const id = searchParams.get('id');
-    if (id) {
-      loadBanner(id);
-    }
-  };
-
-  const loadBanner = async (id: string) => {
+  const loadBanner = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/banners/${id}`);
       if (!response.ok) throw new Error('Failed to load banner');
@@ -67,7 +60,61 @@ export default function ReactEmailEditor() {
     } catch (error) {
       console.error('Error loading banner:', error);
     }
+  }, []);
+
+  const saveSettings = useCallback(async (newDisplayMode: 'email' | 'web' | 'popup') => {
+    try {
+      const response = await fetch('/api/react-email-editor-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: settingsId,
+          displayMode: newDisplayMode,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save settings');
+      const data = await response.json();
+      if (data) {
+        setSettingsId(data.id);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  }, [settingsId]);
+
+  const handleDisplayModeChange = (newDisplayMode: 'email' | 'web' | 'popup') => {
+    setDisplayMode(newDisplayMode);
+    saveSettings(newDisplayMode);
   };
+
+  const onEditorReady = () => {
+    setEditorLoaded(true);
+
+    // Load banner if there's an ID in the URL
+    const id = searchParams.get('id');
+    if (id) {
+      loadBanner(id);
+    }
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      setBannerId(id);
+      if (editorLoaded) {
+        loadBanner(id);
+      }
+    } else {
+      setBannerId(null);
+      setBannerName('Untitled Banner');
+    }
+  }, [searchParams, editorLoaded, loadBanner]);
 
   const logHtml = () => {
     if (!emailEditorRef.current?.editor) return;
@@ -175,6 +222,15 @@ export default function ReactEmailEditor() {
           className="border rounded px-3 py-1 flex-1 max-w-xs"
           placeholder="Banner name"
         />
+        <select
+          value={displayMode}
+          onChange={(e) => handleDisplayModeChange(e.target.value as 'email' | 'web' | 'popup')}
+          className="border rounded px-3 py-1 hover:bg-gray-50"
+        >
+          <option value="email">Email</option>
+          <option value="web">Web</option>
+          <option value="popup">Popup</option>
+        </select>
         <button
           onClick={logHtml}
           className="border rounded px-3 py-1 hover:bg-gray-100"
@@ -195,7 +251,7 @@ export default function ReactEmailEditor() {
           onReady={onEditorReady}
           minHeight="100%"
           options={{
-            displayMode: 'email',
+            displayMode: displayMode,
             locale: 'pt-BR',
             appearance: {
               theme: 'light',
