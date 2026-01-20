@@ -69,6 +69,21 @@ export default function ReactEmailEditor() {
     }
   };
 
+  const logHtml = () => {
+    if (!emailEditorRef.current?.editor) return;
+
+    // Export design from react-email-editor
+    emailEditorRef.current.editor.exportHtml((data: EmailEditorExportData) => {
+      const { design, html } = data;
+
+      console.log('=== HTML to be saved ===');
+      console.log(html);
+      console.log('=== Design JSON ===');
+      console.log(JSON.stringify(design, null, 2));
+      console.log('===================');
+    });
+  };
+
   const saveBanner = async () => {
     if (!emailEditorRef.current?.editor) return;
 
@@ -160,6 +175,12 @@ export default function ReactEmailEditor() {
           className="border rounded px-3 py-1 flex-1 max-w-xs"
           placeholder="Banner name"
         />
+        <button
+          onClick={logHtml}
+          className="border rounded px-3 py-1 hover:bg-gray-100"
+        >
+          Log HTML
+        </button>
         <button
           onClick={saveBanner}
           disabled={saving}
