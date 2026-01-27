@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
+import { cache, CACHE_KEYS } from '../../../lib/cache';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // Try to get from cache first
+    const cached = cache.get<unknown>(CACHE_KEYS.CREATIVE_BY_ID(id));
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const creative = await prisma.creative.findUnique({
       where: { id },
     });
@@ -18,9 +26,21 @@ export async function GET(
       );
     }
 
+    // Store in cache
+    cache.set(CACHE_KEYS.CREATIVE_BY_ID(id), creative);
+
     return NextResponse.json(creative);
   } catch (error) {
     console.error('Error fetching creative:', error);
+
+    const { id } = await params;
+    // Try to return stale cache on error
+    const staleCache = cache.getStale<unknown>(CACHE_KEYS.CREATIVE_BY_ID(id));
+    if (staleCache) {
+      console.log('Returning stale cache due to database error');
+      return NextResponse.json(staleCache);
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch creative' },
       { status: 500 }
@@ -54,6 +74,10 @@ export async function PUT(
       },
     });
 
+    // Invalidate caches
+    cache.invalidate(CACHE_KEYS.CREATIVE_BY_ID(id));
+    cache.invalidate(CACHE_KEYS.CREATIVES_LIST);
+
     return NextResponse.json(creative);
   } catch (error) {
     console.error('Error updating creative:', error);
@@ -73,6 +97,10 @@ export async function DELETE(
     await prisma.creative.delete({
       where: { id },
     });
+
+    // Invalidate caches
+    cache.invalidate(CACHE_KEYS.CREATIVE_BY_ID(id));
+    cache.invalidate(CACHE_KEYS.CREATIVES_LIST);
 
     return NextResponse.json({ success: true });
   } catch (error) {
