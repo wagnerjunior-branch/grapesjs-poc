@@ -44,17 +44,12 @@ async function getEditorSettings() {
   }
 }
 
-export default async function EditorPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ editorType?: string; id?: string }>;
-}) {
-  const params = await searchParams;
+export default async function EditorPage() {
   const initialSettings = await getEditorSettings();
 
   return (
     <Suspense fallback={<div>Loading editor...</div>}>
-      <EditorClient searchParams={params} initialSettings={initialSettings} />
+      <EditorClient initialSettings={initialSettings} />
     </Suspense>
   );
 }

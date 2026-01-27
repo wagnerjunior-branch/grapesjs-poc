@@ -50,7 +50,7 @@ export async function PUT(
         name,
         projectData,
         html,
-        css: css || '', // Allow empty string for react-email-editor which uses inline styles
+        css: css || '',
         editorType: editorType || 'grapesjs',
       },
     });

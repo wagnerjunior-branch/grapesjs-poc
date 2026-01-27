@@ -164,7 +164,7 @@ export default function BannerList() {
               View Creatives
             </button>
             <button
-              onClick={() => router.push('/editor/select')}
+              onClick={() => router.push('/editor')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create New Template
@@ -176,7 +176,7 @@ export default function BannerList() {
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No banners found</p>
             <button
-              onClick={() => router.push('/editor/select')}
+              onClick={() => router.push('/editor')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Your First Banner
