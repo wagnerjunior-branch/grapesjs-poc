@@ -53,13 +53,13 @@ const DEFAULT_COMPONENT = `<div style="position: relative; width: 800px; height:
 
 const DEFAULT_STYLES = `body {
   position: relative;
-  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
   font-family: system-ui;
   overflow: hidden;
 }`;
 
 const DEFAULT_PAGE_CONFIG = {
   name: 'Presentation',
+  head: `<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>`,
   component: `
     <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); color: #1a1a1a; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
       <div style="position: absolute; top: 0; left: 550px; width: 300px; height: 100%; background-color: #baccec; transform: skewX(-12deg)"></div>
@@ -118,6 +118,26 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
   const router = useRouter();
   const bannerDataRef = useRef<BannerData | null>(null);
 
+  const injectTailwind = useCallback((editor: Editor) => {
+    // Add Tailwind script to canvas iframe (for live editing)
+    const canvasDoc = editor.Canvas.getDocument();
+    if (canvasDoc && !canvasDoc.querySelector('script[src*="tailwindcss"]')) {
+      const script = canvasDoc.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';
+      canvasDoc.head.appendChild(script);
+    }
+
+    // Add Tailwind script to page head (for export)
+    const tailwindScript = '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>';
+    const page = editor.Pages.getSelected();
+    if (page) {
+      const currentHead = (page.get('head') as string) || '';
+      if (!currentHead.includes('@tailwindcss/browser')) {
+        page.set('head', currentHead + tailwindScript);
+      }
+    }
+  }, []);
+
   const loadBanner = useCallback(async (id: string, editorInstance?: Editor) => {
     try {
       const response = await fetch(`/api/banners/${id}`);
@@ -131,13 +151,17 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
         if (editorInstance && data.projectData) {
           setTimeout(() => {
             editorInstance.loadProjectData(data.projectData);
+            // Re-inject Tailwind after loading project data
+            setTimeout(() => {
+              injectTailwind(editorInstance);
+            }, EDITOR_LOAD_DELAY);
           }, EDITOR_LOAD_DELAY);
         }
       }
     } catch (error) {
       console.error('Error loading banner:', error);
     }
-  }, []);
+  }, [injectTailwind]);
 
   useEffect(() => {
     const id = searchParams.get('id');
@@ -315,6 +339,8 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
 
   const onReady = async (editor: Editor) => {
     setEditor(editor);
+
+    injectTailwind(editor);
 
     if (editorSettings) {
       const styleManager = editor.StyleManager;

@@ -27,6 +27,7 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
         <style>
           * {
             margin: 0;
@@ -90,7 +91,7 @@ function BannerPreview({ html, css }: { html: string; css: string }) {
                 border: 'none',
                 display: 'block',
               }}
-              sandbox="allow-same-origin"
+              sandbox="allow-same-origin allow-scripts"
               scrolling="auto"
               title="Banner Preview"
             />
