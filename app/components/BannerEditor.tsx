@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Editor } from 'grapesjs';
-import {
+import StudioEditor, {
   StudioCommands,
   ToastVariant,
 } from '@grapesjs/studio-sdk/react';
-import { StudioEditor } from '../../packages/studio-editor/src';
+import '@grapesjs/studio-sdk/style';
+
 import EditorSettings from './EditorSettings';
+import { canvasAbsoluteMode } from '@grapesjs/studio-sdk-plugins';
 
 interface EditorSettingsType {
   showTypographySection: boolean;
@@ -25,16 +27,96 @@ interface BannerEditorProps {
   initialSettings: EditorSettingsType & { id: string };
 }
 
+interface BannerData {
+  projectData: unknown;
+  name: string;
+}
+
+const DEFAULT_BANNER_NAME = 'Untitled Banner';
+const EDITOR_LOAD_DELAY = 100;
+const DEFAULT_TEMPLATE_DELAY = 500;
+const SECTOR_HIDE_DELAY = 300;
+const STYLE_MANAGER_DELAY = 100;
+
+const DEFAULT_COMPONENT = `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); color: #1a1a1a; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
+  <div style="position: absolute; top: 0; left: 550px; width: 300px; height: 100%; background-color: #baccec; transform: skewX(-12deg)"></div>
+  <h1 style="position: absolute; top: 40px; left: 40px; font-size: 50px; margin: 0; font-weight: 700;">Absolute Mode</h1>
+  <p style="position: absolute; top: 135px; left: 40px; font-size: 22px; max-width: 450px; line-height: 1.5; color: #333;">Enable free positioning for your elements — perfect for fixed layouts like presentations, business cards, or print-ready designs.</p>
+  <ul data-gjs-type="text" style="position: absolute; top: 290px; left: 40px; font-size: 18px; line-height: 2; list-style: none; padding: 0;">
+    <li>🎯 Drag & place elements anywhere</li>
+    <li>🧲 Smart snapping & axis locking</li>
+    <li>⚙️ You custom logic</li>
+  </ul>
+  <div style="position: absolute; left: 540px; top: 100px; width: 200px; height: 200px; background: rgba(255, 255, 255, 0.3); border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 80px;">📐</div>
+  <div style="position: absolute; top: 405px; left: 590px; font-size: 14px; color: #555;">Studio SDK · GrapesJS</div>
+</div>`;
+
+const DEFAULT_STYLES = `body {
+  position: relative;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  font-family: system-ui;
+  overflow: hidden;
+}`;
+
+const DEFAULT_PAGE_CONFIG = {
+  name: 'Presentation',
+  component: `
+    <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); color: #1a1a1a; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
+      <div style="position: absolute; top: 0; left: 550px; width: 300px; height: 100%; background-color: #baccec; transform: skewX(-12deg)"></div>
+      <h1 style="position: absolute; top: 40px; left: 40px; font-size: 50px; margin: 0; font-weight: 700;">Absolute Mode</h1>
+      <p style="position: absolute; top: 135px; left: 40px; font-size: 22px; max-width: 450px; line-height: 1.5; color: #333;">Enable free positioning for your elements — perfect for fixed layouts like presentations, business cards, or print-ready designs.</p>
+      <ul data-gjs-type="text" style="position: absolute; top: 290px; left: 40px; font-size: 18px; line-height: 2; list-style: none; padding: 0;">
+        <li>🎯 Drag & place elements anywhere</li>
+        <li>🧲 Smart snapping & axis locking</li>
+        <li>⚙️ You custom logic</li>
+      </ul>
+      <div style="position: absolute; left: 540px; top: 100px; width: 200px; height: 200px; background: rgba(255, 255, 255, 0.3); border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 80px;">📐</div>
+      <div style="position: absolute; top: 405px; left: 590px; font-size: 14px; color: #555;">Studio SDK · GrapesJS</div>
+    </div>
+    <style>
+      body {
+        position: relative;
+        background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        font-family: system-ui;
+        overflow: hidden;
+      }
+    </style>
+  `,
+};
+
+const DEVICES_CONFIG = {
+  default: [
+    {
+      id: 'desktop',
+      name: 'Desktop',
+      width: '',
+    },
+    {
+      id: 'tablet',
+      name: 'Tablet',
+      width: '770px',
+      widthMedia: '992px',
+    },
+    {
+      id: 'mobile',
+      name: 'Mobile',
+      width: '320px',
+      widthMedia: '768px',
+    },
+  ],
+  selected: 'mobile' as const,
+};
+
 export default function BannerEditor({ initialSettings }: BannerEditorProps) {
   const [editor, setEditor] = useState<Editor>();
   const [bannerId, setBannerId] = useState<string | null>(null);
-  const [bannerName, setBannerName] = useState('Untitled Banner');
+  const [bannerName, setBannerName] = useState(DEFAULT_BANNER_NAME);
   const [saving, setSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editorSettings, setEditorSettings] = useState<EditorSettingsType>(initialSettings);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const bannerDataRef = useRef<{ projectData: unknown; name: string } | null>(null);
+  const bannerDataRef = useRef<BannerData | null>(null);
 
   const loadBanner = useCallback(async (id: string, editorInstance?: Editor) => {
     try {
@@ -49,7 +131,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
         if (editorInstance && data.projectData) {
           setTimeout(() => {
             editorInstance.loadProjectData(data.projectData);
-          }, 100);
+          }, EDITOR_LOAD_DELAY);
         }
       }
     } catch (error) {
@@ -63,7 +145,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       setBannerId(id);
     } else {
       setBannerId(null);
-      setBannerName('Untitled Banner');
+      setBannerName(DEFAULT_BANNER_NAME);
       bannerDataRef.current = null;
     }
   }, [searchParams]);
@@ -88,88 +170,113 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
     }
 
     if (!sectorEl) {
-      const allSectors = Array.from(document.querySelectorAll('[class*="sector"], [data-sector], [id*="sector"]'));
+      const allSectors = Array.from(
+        document.querySelectorAll('[class*="sector"], [data-sector], [id*="sector"]')
+      );
       sectorEl = allSectors.find((el) => {
         const text = el.textContent?.toLowerCase() || '';
         const id = el.id?.toLowerCase() || '';
         const className = el.className?.toLowerCase() || '';
-        return text.includes(sectorName) ||
+        return (
+          text.includes(sectorName) ||
           text.includes(sectorNameCapitalized) ||
           id.includes(sectorId) ||
           id.includes(sectorName) ||
           className.includes(sectorId) ||
-          className.includes(sectorName);
+          className.includes(sectorName)
+        );
       }) as HTMLElement;
     }
 
     if (sectorEl) {
       sectorEl.style.display = 'none';
-      const parent = sectorEl.parentElement;
-      if (parent) {
-        parent.style.display = 'none';
-      }
+      sectorEl.parentElement?.style.setProperty('display', 'none');
     }
   }, []);
 
-  const applyStyleManagerSettings = useCallback((editor: Editor, settings: EditorSettingsType) => {
-    const styleManager = editor.StyleManager;
-    if (!styleManager) return;
+  const applyStyleManagerSettings = useCallback(
+    (editor: Editor, settings: EditorSettingsType) => {
+      const styleManager = editor.StyleManager;
+      if (!styleManager) return;
 
-    const sectors = styleManager.getSectors();
-    if (!sectors || sectors.length === 0) return;
+      const sectors = styleManager.getSectors();
+      if (!sectors || sectors.length === 0) return;
 
-    const sectorMap: Record<string, boolean> = {
-      'gs-typography': settings.showTypographySection,
-      'gs-layout': settings.showLayoutSection,
-      'gs-size': settings.showSizeSection,
-      'gs-space': settings.showSpaceSection,
-      'gs-position': settings.showPositionSection,
-      'gs-effects': settings.showEffectsSection,
-      'gs-background': settings.showBackgroundSection,
-      'gs-borders': settings.showBordersSection,
-    };
+      const sectorMap: Record<string, boolean> = {
+        'gs-typography': settings.showTypographySection,
+        'gs-layout': settings.showLayoutSection,
+        'gs-size': settings.showSizeSection,
+        'gs-space': settings.showSpaceSection,
+        'gs-position': settings.showPositionSection,
+        'gs-effects': settings.showEffectsSection,
+        'gs-background': settings.showBackgroundSection,
+        'gs-borders': settings.showBordersSection,
+      };
 
-    sectors.forEach((sector: Record<string, unknown>) => {
-      const sectorId = (sector.id as string) || ((sector.getId as () => string)?.()) || '';
-      const shouldBeVisible = sectorMap[sectorId];
+      sectors.forEach((sector: Record<string, unknown>) => {
+        const sectorId =
+          (sector.id as string) || ((sector.getId as () => string)?.()) || '';
+        const shouldBeVisible = sectorMap[sectorId];
 
-      if (sectorId && shouldBeVisible !== undefined && !shouldBeVisible) {
-        try {
-          const sectorObj = sector as Record<string, unknown>;
+        if (sectorId && shouldBeVisible !== undefined && !shouldBeVisible) {
+          try {
+            const sectorObj = sector as Record<string, unknown>;
 
-          if (sectorObj.set && typeof sectorObj.set === 'function') {
-            (sectorObj.set as (prop: string, value: boolean) => void)('visible', false);
-          } else if (sectorObj.setVisible && typeof sectorObj.setVisible === 'function') {
-            (sectorObj.setVisible as (visible: boolean) => void)(false);
-          } else if ('visible' in sectorObj) {
-            sectorObj.visible = false;
-          }
-
-          setTimeout(() => {
-            const updatedSectors = styleManager.getSectors();
-            const stillVisible = updatedSectors.find((s: Record<string, unknown>) => {
-              const sId = (s.id as string) || ((s.getId as () => string)?.()) || '';
-              return sId === sectorId;
-            });
-
-            if (stillVisible) {
-              const styleManagerApi = styleManager as unknown as Record<string, unknown>;
-              if (styleManagerApi.removeSector && typeof styleManagerApi.removeSector === 'function') {
-                (styleManagerApi.removeSector as (id: string) => void)(sectorId);
-              } else if (sectorObj.remove && typeof sectorObj.remove === 'function') {
-                (sectorObj.remove as () => void)();
-              } else {
-                hideSectorViaDOM(sectorId);
-              }
+            if (sectorObj.set && typeof sectorObj.set === 'function') {
+              (sectorObj.set as (prop: string, value: boolean) => void)(
+                'visible',
+                false
+              );
+            } else if (
+              sectorObj.setVisible &&
+              typeof sectorObj.setVisible === 'function'
+            ) {
+              (sectorObj.setVisible as (visible: boolean) => void)(false);
+            } else if ('visible' in sectorObj) {
+              sectorObj.visible = false;
             }
-          }, 300);
-        } catch (error) {
-          console.error(`Error hiding sector ${sectorId}:`, error);
-          hideSectorViaDOM(sectorId);
+
+            setTimeout(() => {
+              const updatedSectors = styleManager.getSectors();
+              const stillVisible = updatedSectors.find(
+                (s: Record<string, unknown>) => {
+                  const sId =
+                    (s.id as string) || ((s.getId as () => string)?.()) || '';
+                  return sId === sectorId;
+                }
+              );
+
+              if (stillVisible) {
+                const styleManagerApi = styleManager as unknown as Record<
+                  string,
+                  unknown
+                >;
+                if (
+                  styleManagerApi.removeSector &&
+                  typeof styleManagerApi.removeSector === 'function'
+                ) {
+                  (styleManagerApi.removeSector as (id: string) => void)(
+                    sectorId
+                  );
+                } else if (
+                  sectorObj.remove &&
+                  typeof sectorObj.remove === 'function'
+                ) {
+                  (sectorObj.remove as () => void)();
+                } else {
+                  hideSectorViaDOM(sectorId);
+                }
+              }
+            }, SECTOR_HIDE_DELAY);
+          } catch (error) {
+            console.error(`Error hiding sector ${sectorId}:`, error);
+            hideSectorViaDOM(sectorId);
+          }
         }
-      }
-    });
-  }, [hideSectorViaDOM]);
+      });
+    },
+    [hideSectorViaDOM]
+  );
 
   useEffect(() => {
     if (editor && editorSettings) {
@@ -177,7 +284,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       if (styleManager) {
         setTimeout(() => {
           applyStyleManagerSettings(editor, editorSettings);
-        }, 100);
+        }, STYLE_MANAGER_DELAY);
       }
     }
   }, [editor, editorSettings, applyStyleManagerSettings]);
@@ -199,6 +306,13 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
     };
   }, []);
 
+  const applyDefaultTemplate = useCallback((editor: Editor) => {
+    setTimeout(() => {
+      editor.setComponents(DEFAULT_COMPONENT);
+      editor.setStyle(DEFAULT_STYLES);
+    }, DEFAULT_TEMPLATE_DELAY);
+  }, []);
+
   const onReady = async (editor: Editor) => {
     setEditor(editor);
 
@@ -207,7 +321,7 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
       if (styleManager) {
         setTimeout(() => {
           applyStyleManagerSettings(editor, editorSettings);
-        }, 100);
+        }, STYLE_MANAGER_DELAY);
       }
     }
 
@@ -215,19 +329,20 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
     if (id) {
       await loadBanner(id, editor);
     } else {
-      bannerDataRef.current = null;
-      editor.setComponents('');
-      editor.setStyle('');
+      applyDefaultTemplate(editor);
     }
   };
 
-  const showToast = (id: string, content: string) =>
-    editor?.runCommand(StudioCommands.toastAdd, {
-      id,
-      header: 'Notification',
-      content,
-      variant: ToastVariant.Info,
-    });
+  const showToast = useCallback(
+    (id: string, content: string) =>
+      editor?.runCommand(StudioCommands.toastAdd, {
+        id,
+        header: 'Notification',
+        content,
+        variant: ToastVariant.Info,
+      }),
+    [editor]
+  );
 
   const saveBanner = async () => {
     if (!editor) return;
@@ -318,31 +433,13 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
           options={{
             licenseKey: process.env.NEXT_PUBLIC_GRAPESJS_LICENSE_KEY || '',
             pages: false,
+            plugins: [canvasAbsoluteMode],
             project: {
-              type: 'web',
+              default: {
+                pages: [DEFAULT_PAGE_CONFIG],
+              },
             },
-            devices: {
-              default: [
-                {
-                  id: 'desktop',
-                  name: 'Desktop',
-                  width: '',
-                },
-                {
-                  id: 'tablet',
-                  name: 'Tablet',
-                  width: '770px',
-                  widthMedia: '992px',
-                },
-                {
-                  id: 'mobile',
-                  name: 'Mobile',
-                  width: '320px',
-                  widthMedia: '768px',
-                },
-              ],
-              selected: 'mobile',
-            },
+            devices: DEVICES_CONFIG,
           }}
           style={{ height: '100%', width: '100%' }}
         />
