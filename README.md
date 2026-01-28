@@ -1,36 +1,183 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GrapeJS POC - Figma to HTML Editor
 
-## Getting Started
+A Next.js application that converts Figma designs to editable HTML templates using a form-based editor interface. Features integration with Figma MCP (Model Context Protocol) via Claude Code for automated design-to-HTML conversion.
 
-First, run the development server:
+## Features
+
+- **Figma Integration**: Convert Figma designs to HTML using Figma MCP
+- **Form-Based Editor**: Simple form interface for editing HTML content
+- **GrapeJS Editor**: Visual drag-and-drop editor for advanced users
+- **Live Preview**: Real-time preview of HTML changes
+- **Export Options**: Clean HTML (production) or annotated HTML (re-editable)
+- **Template Loading**: Load existing HTML templates from `/public` directory
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Try the Demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Visit the demo banner (already processed from Figma):
+```
+http://localhost:3000/template-editor?demo=figma-banner
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
+| Route | Description |
+|-------|-------------|
+| `/` | Home page with navigation |
+| `/figma-editor` | Figma URL input and template loading |
+| `/template-editor` | Form-based HTML editor |
+| `/editor` | GrapeJS visual editor |
 
-To learn more about Next.js, take a look at the following resources:
+## Figma Workflow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Processing Figma Designs
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Step 1:** Get your Figma URL (must include `node-id` parameter)
+```
+https://www.figma.com/design/{fileKey}/{fileName}?node-id={nodeId}
+```
 
-## Deploy on Vercel
+**Step 2:** Go to `/figma-editor` and click "Process with Claude Code"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Step 3:** Claude Code automatically:
+- Invokes the `/html-renderer` skill
+- Calls Figma MCP `get_design_context`
+- Converts React code to clean HTML
+- Saves to `html/` directory
+- Provides a link to the form editor
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Step 4:** Edit content via the form editor and export
+
+### Loading Existing Templates
+
+Visit `/figma-editor` and click **"Load Banner from /public/banner-standard-right.html"** to load a pre-existing template into the form editor.
+
+## Form Editor Features
+
+The form editor automatically detects and creates form fields for:
+
+- **Headings** (h1-h6) → Text input
+- **Paragraphs** → Textarea
+- **Buttons** → Text input with character limits
+- **Links** → Text input
+- **Images** → URL input with alt text field
+
+### Editing
+
+- Changes apply on blur (when you leave a field)
+- Character counters show remaining space
+- Live preview updates automatically
+- Zoom controls (50% - 200%)
+
+### Exporting
+
+- **Clean HTML**: Production-ready, no data attributes
+- **Annotated HTML**: Includes `data-editable-id` for re-editing
+- **Copy to Clipboard**: Quick copy functionality
+
+## Project Structure
+
+```
+/app
+├── figma-editor/          # Figma workflow entry point
+├── template-editor/       # Form-based editor
+├── editor/                # GrapeJS editor
+├── components/            # React components
+│   ├── FigmaProcessor.tsx
+│   ├── TemplateEditorClient.tsx
+│   ├── TemplateFormEditor.tsx
+│   └── TemplatePreview.tsx
+├── lib/                   # Utilities
+│   ├── figma-utils.ts     # URL parsing, React-to-HTML conversion
+│   ├── html-parser.ts     # Element detection
+│   └── template-editor.ts # Form schema generation
+└── api/                   # API routes
+
+/html                      # Generated HTML files
+/public                    # Static assets and templates
+/.claude/skills/           # Claude Code skills
+  └── html-renderer/       # Figma MCP integration skill
+```
+
+## Technical Details
+
+### Figma MCP Integration
+
+The project uses Claude Code's Figma MCP integration to:
+1. Fetch design context from Figma
+2. Receive React/JSX code with Tailwind CSS
+3. Convert to clean HTML
+4. Remove absolute positioning (use flexbox)
+5. Make responsive with Tailwind classes
+
+### HTML Processing
+
+The `html-parser.ts` utility:
+- Detects editable elements using heuristics
+- Injects `data-editable-id` attributes
+- Groups elements by page sections
+- Generates form schemas with validation
+
+### State Management
+
+- `originalHtml`: Unmodified source
+- `annotatedHtml`: With `data-editable-id` attributes
+- `currentHtml`: Current edited version
+- Updates flow through React state to iframe preview
+
+## Documentation
+
+- **[TEMPLATE_EDITOR_GUIDE.md](./TEMPLATE_EDITOR_GUIDE.md)** - Detailed technical guide for the form editor
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **Editor**: GrapeJS
+- **Integration**: Figma MCP via Claude Code
+- **Database**: Prisma (configured, not yet used)
+
+## Development
+
+### Build
+
+```bash
+npm run build
+```
+
+### Lint
+
+```bash
+npm run lint
+```
+
+### Format
+
+```bash
+npm run format
+```
+
+## Notes
+
+- The Figma MCP integration requires Claude Code to be running
+- Generated HTML files are saved to the `/html` directory
+- Image URLs from Figma CDN have a 7-day expiry
+- The form editor preserves all Tailwind classes and styling
+
+## License
+
+This is a proof-of-concept project.
