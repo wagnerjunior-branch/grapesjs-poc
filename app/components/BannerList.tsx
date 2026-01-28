@@ -165,6 +165,18 @@ export default function BannerList() {
               View Creatives
             </button>
             <button
+              onClick={() => router.push('/figma-editor')}
+              className="border border-purple-600 text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors"
+            >
+              Figma to Editor
+            </button>
+            <button
+              onClick={() => router.push('/template-editor?demo=true')}
+              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Form Editor (Demo)
+            </button>
+            <button
               onClick={() => router.push('/editor')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
