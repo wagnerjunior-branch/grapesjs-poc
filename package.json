@@ -13,7 +13,10 @@
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:migrate:deploy": "dotenv -e .env.local -- prisma migrate deploy",
-    "db:studio": "dotenv -e .env.local -- prisma studio"
+    "db:studio": "dotenv -e .env.local -- prisma studio",
+    "screenshot": "node scripts/screenshot-mobile.js",
+    "compare": "node scripts/compare-screenshots.js",
+    "fetch-figma": "node scripts/fetch-figma-screenshot.js"
   },
   "dependencies": {
     "@grapesjs/studio-sdk": "^1.0.0",
@@ -37,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "eslint-config-prettier": "^10.1.8",
+    "playwright": "^1.58.0",
     "prettier": "^3.7.4",
     "prisma": "^5.9.1",
     "tailwindcss": "^4",
