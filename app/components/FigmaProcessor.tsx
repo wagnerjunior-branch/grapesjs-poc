@@ -123,14 +123,22 @@ export default function FigmaProcessor() {
                 Process with Claude Code
               </button>
 
-              {/* Demo Link */}
-              <div className="mt-6 text-center">
-                <a
-                  href="/template-editor?demo=figma-banner"
-                  className="text-sm text-purple-600 hover:underline"
-                >
-                  Or try the demo banner →
-                </a>
+              {/* Demo Buttons */}
+              <div className="mt-6 space-y-3">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <h4 className="mb-3 text-sm font-semibold text-gray-900">
+                    📁 Load Existing Template
+                  </h4>
+                  <a
+                    href="/template-editor?demo=true"
+                    className="block w-full rounded-lg bg-blue-600 px-6 py-3 text-center font-medium text-white hover:bg-blue-700"
+                  >
+                    Load Banner from /public/banner-standard-right.html
+                  </a>
+                  <p className="mt-2 text-xs text-gray-600">
+                    Opens the existing Figma banner in the form editor. All styles and layout preserved.
+                  </p>
+                </div>
               </div>
             </>
           )}
