@@ -57,6 +57,32 @@ export default function FigmaProcessor() {
 
   }, [url]);
 
+  const handleLoadTemplate = useCallback(async () => {
+    setError(null);
+    setProcessing(true);
+
+    try {
+      const response = await fetch('/api/load-template?template=banner-standard-right');
+      
+      if (!response.ok) {
+        throw new Error('Failed to load template');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.projectData) {
+        const encodedData = encodeURIComponent(JSON.stringify(data.projectData));
+        window.location.href = `/editor?template=${encodedData}&name=${encodeURIComponent(data.templateName)}`;
+      } else {
+        throw new Error('Invalid template data');
+      }
+    } catch (err) {
+      setError('Failed to load template. Please try again.');
+      setProcessing(false);
+      console.error('Template load error:', err);
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="w-full max-w-2xl">
@@ -129,14 +155,14 @@ export default function FigmaProcessor() {
                   <h4 className="mb-3 text-sm font-semibold text-gray-900">
                     📁 Load Existing Template
                   </h4>
-                  <a
-                    href="/template-editor?demo=true"
+                  <button
+                    onClick={handleLoadTemplate}
                     className="block w-full rounded-lg bg-blue-600 px-6 py-3 text-center font-medium text-white hover:bg-blue-700"
                   >
                     Load Banner from /public/banner-standard-right.html
-                  </a>
+                  </button>
                   <p className="mt-2 text-xs text-gray-600">
-                    Opens the existing Figma banner in the form editor. All styles and layout preserved.
+                    Converts the HTML template to GrapeJS format and opens it in the visual editor with form-based editing for all major elements.
                   </p>
                 </div>
               </div>

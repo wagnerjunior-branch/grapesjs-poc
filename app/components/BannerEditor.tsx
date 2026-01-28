@@ -165,11 +165,17 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
 
   useEffect(() => {
     const id = searchParams.get('id');
+    const templateName = searchParams.get('name');
+    
     if (id) {
       setBannerId(id);
     } else {
       setBannerId(null);
-      setBannerName(DEFAULT_BANNER_NAME);
+      if (templateName) {
+        setBannerName(decodeURIComponent(templateName));
+      } else {
+        setBannerName(DEFAULT_BANNER_NAME);
+      }
       bannerDataRef.current = null;
     }
   }, [searchParams]);
@@ -352,8 +358,23 @@ export default function BannerEditor({ initialSettings }: BannerEditorProps) {
     }
 
     const id = searchParams.get('id');
+    const templateParam = searchParams.get('template');
+    
     if (id) {
       await loadBanner(id, editor);
+    } else if (templateParam) {
+      try {
+        const templateData = JSON.parse(decodeURIComponent(templateParam));
+        setTimeout(() => {
+          editor.loadProjectData(templateData);
+          setTimeout(() => {
+            injectTailwind(editor);
+          }, EDITOR_LOAD_DELAY);
+        }, EDITOR_LOAD_DELAY);
+      } catch (error) {
+        console.error('Error loading template:', error);
+        applyDefaultTemplate(editor);
+      }
     } else {
       applyDefaultTemplate(editor);
     }
