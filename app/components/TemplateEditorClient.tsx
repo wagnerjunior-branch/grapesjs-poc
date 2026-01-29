@@ -48,6 +48,7 @@ export default function TemplateEditorClient({
   const [showExportModal, setShowExportModal] = useState(false);
   const [figmaFileKey, setFigmaFileKey] = useState<string>('');
   const [figmaNodeId, setFigmaNodeId] = useState<string>('');
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // Parse HTML and generate schema on mount or when HTML changes
   useEffect(() => {
@@ -55,8 +56,16 @@ export default function TemplateEditorClient({
       setIsProcessing(true);
 
       try {
+        console.log('=== DEBUGGING HTML FLOW ===');
+        console.log('Original HTML length:', originalHtml.length);
+        console.log('Original HTML starts with:', originalHtml.substring(0, 200));
+
         // Parse HTML to detect editable elements
         const result = parseHtmlForEditableElements(originalHtml);
+
+        console.log('Annotated HTML length:', result.annotatedHtml.length);
+        console.log('Annotated HTML starts with:', result.annotatedHtml.substring(0, 200));
+        console.log('Number of editable elements found:', result.elements.length);
 
         setAnnotatedHtml(result.annotatedHtml);
         setCurrentHtml(result.annotatedHtml);
@@ -243,6 +252,12 @@ export default function TemplateEditorClient({
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+            className="rounded border border-yellow-400 bg-yellow-50 px-3 py-2 text-sm font-medium text-yellow-700 hover:bg-yellow-100"
+          >
+            {showDebugPanel ? 'Hide' : 'Debug'}
+          </button>
+          <button
             onClick={handleImportHtml}
             className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
@@ -262,6 +277,47 @@ export default function TemplateEditorClient({
           </button>
         </div>
       </div>
+
+      {/* Debug Panel */}
+      {showDebugPanel && (
+        <div className="border-b bg-yellow-50 p-4">
+          <div className="mx-auto max-w-7xl">
+            <h3 className="mb-2 text-sm font-semibold text-yellow-900">Debug Info</h3>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <p className="font-medium text-yellow-800">Original HTML Length:</p>
+                <p className="text-yellow-700">{originalHtml.length} characters</p>
+              </div>
+              <div>
+                <p className="font-medium text-yellow-800">Current HTML Length:</p>
+                <p className="text-yellow-700">{currentHtml.length} characters</p>
+              </div>
+              <div className="col-span-2">
+                <p className="font-medium text-yellow-800">Current HTML Preview (first 500 chars):</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-yellow-100 p-2 text-yellow-900">
+                  {currentHtml.substring(0, 500)}
+                </pre>
+              </div>
+              <div className="col-span-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob([currentHtml], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'debug-current.html';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="rounded bg-yellow-600 px-3 py-1 text-white hover:bg-yellow-700"
+                >
+                  Download Current HTML for Inspection
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Split Pane Layout */}
       <div className="flex flex-1 overflow-hidden">

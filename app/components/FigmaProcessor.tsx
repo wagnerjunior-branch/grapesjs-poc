@@ -63,13 +63,13 @@ export default function FigmaProcessor() {
 
     try {
       const response = await fetch('/api/load-template?template=banner-standard-right');
-      
+
       if (!response.ok) {
         throw new Error('Failed to load template');
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.projectData) {
         const encodedData = encodeURIComponent(JSON.stringify(data.projectData));
         window.location.href = `/editor?template=${encodedData}&name=${encodeURIComponent(data.templateName)}`;
@@ -81,6 +81,18 @@ export default function FigmaProcessor() {
       setProcessing(false);
       console.error('Template load error:', err);
     }
+  }, []);
+
+  const handleLoadTemplateToFormEditor = useCallback(() => {
+    // Directly load from the demo route which reads the original HTML
+    // from /public/banner-standard-right.html with all Tailwind classes preserved
+    window.location.href = '/template-editor?demo=true';
+  }, []);
+
+  const handleLoadFullHtmlToFormEditor = useCallback(() => {
+    // Load the FULL HTML document (including <head>, <style>, scripts)
+    // into the form editor - no GrapeJS conversion
+    window.location.href = '/template-editor?demo=full';
   }, []);
 
   return (
@@ -155,14 +167,41 @@ export default function FigmaProcessor() {
                   <h4 className="mb-3 text-sm font-semibold text-gray-900">
                     📁 Load Existing Template
                   </h4>
+
+                  {/* GrapeJS Visual Editor Button */}
                   <button
                     onClick={handleLoadTemplate}
-                    className="block w-full rounded-lg bg-blue-600 px-6 py-3 text-center font-medium text-white hover:bg-blue-700"
+                    disabled={processing}
+                    className="block w-full rounded-lg bg-blue-600 px-6 py-3 text-center font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                   >
-                    Load Banner from /public/banner-standard-right.html
+                    Open in GrapeJS Visual Editor
                   </button>
                   <p className="mt-2 text-xs text-gray-600">
-                    Converts the HTML template to GrapeJS format and opens it in the visual editor with form-based editing for all major elements.
+                    Converts the HTML template to GrapeJS format and opens it in the visual editor with drag-and-drop editing.
+                  </p>
+
+                  {/* Form Editor Button (Body Content Only) */}
+                  <button
+                    onClick={handleLoadTemplateToFormEditor}
+                    disabled={processing}
+                    className="mt-3 block w-full rounded-lg border-2 border-green-600 bg-white px-6 py-3 text-center font-medium text-green-700 hover:bg-green-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                  >
+                    Open in Form Editor (Body Only)
+                  </button>
+                  <p className="mt-2 text-xs text-gray-600">
+                    Opens just the body content in the form-based editor. Excludes &lt;head&gt;, scripts, and styles.
+                  </p>
+
+                  {/* Form Editor Button (Full HTML Document) */}
+                  <button
+                    onClick={handleLoadFullHtmlToFormEditor}
+                    disabled={processing}
+                    className="mt-3 block w-full rounded-lg border-2 border-purple-600 bg-white px-6 py-3 text-center font-medium text-purple-700 hover:bg-purple-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                  >
+                    Open in Form Editor (Full HTML)
+                  </button>
+                  <p className="mt-2 text-xs text-gray-600">
+                    Opens the complete HTML document including &lt;head&gt;, scripts, styles, and body. No GrapeJS conversion.
                   </p>
                 </div>
               </div>

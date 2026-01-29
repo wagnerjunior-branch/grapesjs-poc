@@ -31,6 +31,9 @@ export function parseHtmlForEditableElements(html: string): EditableElementsSche
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
+  const isCompleteDocument = html.trim().toLowerCase().startsWith('<!doctype') ||
+                             html.trim().toLowerCase().startsWith('<html');
+
   const elements: EditableElement[] = [];
   let idCounter = 0;
 
@@ -175,8 +178,16 @@ export function parseHtmlForEditableElements(html: string): EditableElementsSche
     });
   });
 
-  // Get annotated HTML
-  const annotatedHtml = doc.documentElement.outerHTML;
+  // Get annotated HTML - extract just the body content if original was body-only  let annotatedHtml: string;
+  if (isCompleteDocument) {
+    // For full documents, serialize the entire document
+    // Preserve DOCTYPE if present
+    const hasDoctype = html.trim().toLowerCase().startsWith('<!doctype');
+    const doctype = hasDoctype ? '<!DOCTYPE html>\n' : '';
+    annotatedHtml = doctype + doc.documentElement.outerHTML;
+  } else {
+    annotatedHtml = doc.body.innerHTML;
+  }
 
   // Group elements by section (basic grouping by common ancestors)
   const groups = groupElementsBySection(elements, doc);
@@ -367,7 +378,18 @@ export function applyChangesToHtml(
     }
   });
 
-  return doc.documentElement.outerHTML;
+  // Preserve original format - return body-only if input was body-only
+  const isCompleteDocument = annotatedHtml.trim().toLowerCase().startsWith('<!doctype') ||
+                             annotatedHtml.trim().toLowerCase().startsWith('<html');
+
+  if (isCompleteDocument) {
+    // Preserve DOCTYPE if present
+    const hasDoctype = annotatedHtml.trim().toLowerCase().startsWith('<!doctype');
+    const doctype = hasDoctype ? '<!DOCTYPE html>\n' : '';
+    return doctype + doc.documentElement.outerHTML;
+  } else {
+    return doc.body.innerHTML;
+  }
 }
 
 /**
@@ -382,5 +404,16 @@ export function cleanHtmlForExport(annotatedHtml: string): string {
     element.removeAttribute('data-editable-id');
   });
 
-  return doc.documentElement.outerHTML;
+  // Preserve original format - return body-only if input was body-only
+  const isCompleteDocument = annotatedHtml.trim().toLowerCase().startsWith('<!doctype') ||
+                             annotatedHtml.trim().toLowerCase().startsWith('<html');
+
+  if (isCompleteDocument) {
+    // Preserve DOCTYPE if present
+    const hasDoctype = annotatedHtml.trim().toLowerCase().startsWith('<!doctype');
+    const doctype = hasDoctype ? '<!DOCTYPE html>\n' : '';
+    return doctype + doc.documentElement.outerHTML;
+  } else {
+    return doc.body.innerHTML;
+  }
 }

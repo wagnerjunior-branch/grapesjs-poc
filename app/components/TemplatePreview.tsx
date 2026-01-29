@@ -28,8 +28,21 @@ export default function TemplatePreview({
     if (iframeRef.current) {
       setIsLoading(true);
 
-      // Create complete HTML document with Tailwind CDN
-      const completeHtml = wrapHtmlWithDocument(html);
+      // Check if HTML is already a complete document
+      const isFullDocument = html.trim().toLowerCase().startsWith('<!doctype') ||
+                            html.trim().toLowerCase().startsWith('<html');
+
+      console.log('=== TEMPLATE PREVIEW ===');
+      console.log('Is full document:', isFullDocument);
+      console.log('HTML length:', html.length);
+      console.log('HTML starts with:', html.substring(0, 200));
+
+      // If it's already a full document, use it as-is
+      // Otherwise, wrap it in a complete document structure
+      const completeHtml = isFullDocument ? html : wrapHtmlWithDocument(html);
+
+      console.log('Complete HTML length:', completeHtml.length);
+      console.log('Complete HTML starts with:', completeHtml.substring(0, 200));
 
       // Update iframe content
       iframeRef.current.srcdoc = completeHtml;
@@ -106,7 +119,7 @@ export default function TemplatePreview({
             onLoad={handleIframeLoad}
             title="Template Preview"
             className="block h-[600px] w-full border border-gray-300 bg-white shadow-lg"
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
             style={{
               minWidth: '320px',
             }}

@@ -43,7 +43,29 @@ export default async function TemplateEditorPage({ searchParams }: PageProps) {
       console.error('Failed to load Figma banner demo:', error);
     }
   }
-  // Load original demo template if requested
+  // Load FULL HTML document (including <head>, scripts, styles)
+  else if (params.demo === 'full') {
+    try {
+      const bannerPath = path.join(
+        process.cwd(),
+        'public',
+        'banner-standard-right.html'
+      );
+      let fileContent = await fs.readFile(bannerPath, 'utf-8');
+
+      // Remove the demo info section from body
+      fileContent = fileContent.replace(
+        /<!-- Demo Info -->[\s\S]*?<\/div>\s*<\/body>/,
+        '</body>'
+      );
+
+      initialHtml = fileContent.trim();
+      templateName = 'Standard Banner (Full HTML)';
+    } catch (error) {
+      console.error('Failed to load full HTML template:', error);
+    }
+  }
+  // Load original demo template (body content only)
   else if (params.demo === 'true') {
     try {
       const bannerPath = path.join(
