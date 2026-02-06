@@ -60,4 +60,6 @@ export const CACHE_KEYS = {
   CREATIVES_LIST: 'creatives:list',
   CREATIVE_BY_ID: (id: string) => `creatives:${id}`,
   EDITOR_SETTINGS: 'editor-settings',
+  PUCK_PROJECTS_LIST: 'puck-projects:list',
+  PUCK_PROJECT_BY_ID: (id: string) => `puck-projects:${id}`,
 };

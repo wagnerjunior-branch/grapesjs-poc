@@ -21,6 +21,7 @@
   "dependencies": {
     "@grapesjs/studio-sdk": "^1.0.0",
     "@grapesjs/studio-sdk-plugins": "^1.0.32",
+    "@measured/puck": "^0.20.2",
     "@prisma/client": "^5.9.1",
     "@radix-ui/react-switch": "^1.1.1",
     "class-variance-authority": "^0.7.1",

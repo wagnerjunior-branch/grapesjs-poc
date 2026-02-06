@@ -45,3 +45,17 @@ model EditorSettings {
 
   @@map("editor_settings")
 }
+
+model PuckProject {
+  id        String   @id @default(uuid())
+  name      String
+  figmaUrl  String?  @map("figma_url")
+  html      String   @db.Text
+  puckData  Json     @map("puck_data")
+  variables Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("puck_projects")
+  @@index([createdAt(sort: Desc)])
+}
