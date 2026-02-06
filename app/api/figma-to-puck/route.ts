@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseFigmaUrl } from '@/app/lib/figma-utils';
 import { extractVariables } from '@/app/lib/puck-template';
-import { fetchFigmaScreenshotUrl } from '@/app/lib/figma-api';
+import {
+  fetchFigmaScreenshotUrl,
+  fetchFigmaImageFills,
+} from '@/app/lib/figma-api';
 import { generateHtmlFromScreenshot } from '@/app/lib/anthropic';
 
 // Allow up to 60 seconds for the Claude API call on Vercel
@@ -51,11 +54,17 @@ export async function POST(request: NextRequest) {
 
     const { fileKey, nodeId } = parseResult.data;
 
-    // Step 1: Fetch screenshot URL from Figma REST API
-    const { imageUrl } = await fetchFigmaScreenshotUrl(fileKey, nodeId);
+    // Step 1: Fetch screenshot URL and image fills from Figma REST API
+    const [{ imageUrl }, imageFills] = await Promise.all([
+      fetchFigmaScreenshotUrl(fileKey, nodeId),
+      fetchFigmaImageFills(fileKey, nodeId),
+    ]);
 
-    // Step 2: Send screenshot to Claude Vision → get HTML
-    const generatedHtml = await generateHtmlFromScreenshot(imageUrl);
+    // Step 2: Send screenshot + image fills to Claude Vision → get HTML
+    const generatedHtml = await generateHtmlFromScreenshot(
+      imageUrl,
+      imageFills
+    );
 
     // Step 3: Extract template variables
     const variables = extractVariables(generatedHtml);

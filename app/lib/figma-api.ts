@@ -1,12 +1,20 @@
 /**
  * Figma REST API client for server-side use.
- * Fetches screenshot URLs for given nodes using the Figma Images API.
+ * Fetches screenshot URLs and image fills using the Figma Images API.
  */
 
 export interface FigmaScreenshotResult {
   imageUrl: string;
   fileKey: string;
   nodeId: string;
+}
+
+export interface FigmaImageFill {
+  nodeId: string;
+  nodeName: string;
+  imageUrl: string;
+  width: number;
+  height: number;
 }
 
 /**
@@ -54,4 +62,98 @@ export async function fetchFigmaScreenshotUrl(
   }
 
   return { imageUrl, fileKey, nodeId };
+}
+
+/**
+ * Fetch the file structure for a node and extract child nodes that have image fills.
+ * Then render those nodes as individual images via the Figma Images API.
+ */
+export async function fetchFigmaImageFills(
+  fileKey: string,
+  nodeId: string
+): Promise<FigmaImageFill[]> {
+  const token = process.env.FIGMA_API_KEY;
+  if (!token) {
+    throw new Error('FIGMA_API_KEY environment variable is not set');
+  }
+
+  // Get the file structure for this node
+  const formattedNodeId = nodeId.replace(/:/g, '-');
+  const fileUrl = `https://api.figma.com/v1/files/${fileKey}?ids=${formattedNodeId}&depth=10`;
+
+  const fileResponse = await fetch(fileUrl, {
+    headers: { 'X-Figma-Token': token },
+  });
+
+  if (!fileResponse.ok) {
+    console.error('Failed to fetch Figma file structure');
+    return [];
+  }
+
+  const fileData = await fileResponse.json();
+
+  // Find nodes with image fills
+  const imageNodeIds: { id: string; name: string; width: number; height: number }[] = [];
+
+  function walkNodes(node: any) {
+    const hasImageFill = node.fills?.some(
+      (fill: any) => fill.type === 'IMAGE' && fill.visible !== false
+    );
+
+    if (hasImageFill && node.absoluteBoundingBox) {
+      imageNodeIds.push({
+        id: node.id,
+        name: node.name || 'image',
+        width: Math.round(node.absoluteBoundingBox.width),
+        height: Math.round(node.absoluteBoundingBox.height),
+      });
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        walkNodes(child);
+      }
+    }
+  }
+
+  // Walk the document tree
+  if (fileData.document) {
+    walkNodes(fileData.document);
+  }
+
+  if (imageNodeIds.length === 0) {
+    return [];
+  }
+
+  // Render image nodes via the Images API
+  const ids = imageNodeIds.map((n) => n.id.replace(/:/g, '-')).join(',');
+  const imagesUrl = `https://api.figma.com/v1/images/${fileKey}?ids=${ids}&format=png&scale=2`;
+
+  const imagesResponse = await fetch(imagesUrl, {
+    headers: { 'X-Figma-Token': token },
+  });
+
+  if (!imagesResponse.ok) {
+    console.error('Failed to fetch Figma image renders');
+    return [];
+  }
+
+  const imagesData = await imagesResponse.json();
+  const results: FigmaImageFill[] = [];
+
+  for (const node of imageNodeIds) {
+    const formattedId = node.id.replace(/:/g, '-');
+    const url = imagesData.images?.[node.id] || imagesData.images?.[formattedId];
+    if (url) {
+      results.push({
+        nodeId: node.id,
+        nodeName: node.name,
+        imageUrl: url,
+        width: node.width,
+        height: node.height,
+      });
+    }
+  }
+
+  return results;
 }
