@@ -150,7 +150,7 @@ export default function PuckEditorClient({
       }
 
       setState('processing');
-      setProcessingMessage('Sending Figma URL for processing...');
+      setProcessingMessage('Fetching design from Figma...');
 
       try {
         const res = await fetch('/api/figma-to-puck', {
@@ -162,32 +162,20 @@ export default function PuckEditorClient({
         const result = await res.json();
 
         if (!result.success) {
-          setUrlError(result.error ?? 'Failed to process Figma URL');
+          setUrlError(result.error ?? 'Failed to process Figma design');
           setState('import');
           return;
         }
 
-        if (result.html) {
-          // Direct HTML result — load immediately
-          const vars = extractVariables(result.html);
-          setVariables(vars);
-          setHtml(result.html);
-          await loadHtmlIntoEditor(result.html, vars, figmaUrl);
-        } else {
-          // Need external processing (Figma MCP)
-          setProcessingMessage(
-            'Figma URL parsed. Waiting for design processing...',
-          );
-          // The external flow (Claude Code) will supply the HTML later
-          setState('import');
-          setUrlError(
-            'URL parsed successfully. Please ask Claude Code to process this design.',
-          );
-        }
+        // Server always returns HTML on success
+        const vars = extractVariables(result.html);
+        setVariables(vars);
+        setHtml(result.html);
+        await loadHtmlIntoEditor(result.html, vars, figmaUrl);
       } catch (err) {
         console.error('Figma submit error:', err);
         setUrlError(
-          err instanceof Error ? err.message : 'Failed to process URL',
+          err instanceof Error ? err.message : 'Failed to process design',
         );
         setState('import');
       }
@@ -460,8 +448,11 @@ export default function PuckEditorClient({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p className="mb-4 text-lg font-medium text-gray-700">
+          <p className="mb-2 text-lg font-medium text-gray-700">
             {processingMessage || 'Processing...'}
+          </p>
+          <p className="mb-4 text-sm text-gray-500">
+            This may take 20-30 seconds while the AI analyzes the design.
           </p>
           <button
             onClick={handleCancelProcessing}

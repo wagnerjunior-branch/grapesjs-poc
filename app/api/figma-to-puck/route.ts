@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseFigmaUrl } from '@/app/lib/figma-utils';
 import { extractVariables } from '@/app/lib/puck-template';
+import { fetchFigmaScreenshotUrl } from '@/app/lib/figma-api';
+import { generateHtmlFromScreenshot } from '@/app/lib/anthropic';
+
+// Allow up to 60 seconds for the Claude API call on Vercel
+export const maxDuration = 60;
 
 /**
  * POST /api/figma-to-puck
  *
- * Accepts a Figma URL, parses it, and returns the data needed
- * for Claude Code to process the design via Figma MCP.
- *
- * The actual Figma MCP call + HTML conversion is done by Claude Code
- * using the html-renderer skill. This endpoint orchestrates the flow.
- *
- * Request: { figmaUrl: string } or { figmaUrl?: string, html: string }
- * Response: { success, fileKey, nodeId, html?, variables?, error? }
+ * Two modes:
+ * 1. { html: string } — process provided HTML (extract variables, return)
+ * 2. { figmaUrl: string } — fetch screenshot from Figma, convert via Claude Vision, return HTML
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { figmaUrl, html } = body;
 
-    // If HTML is provided directly (from Claude Code callback), process it
+    // Path 1: HTML provided directly — extract variables and return
     if (html && typeof html === 'string') {
       const variables = extractVariables(html);
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Otherwise, parse the Figma URL for processing
+    // Path 2: Figma URL → screenshot → Claude Vision → HTML
     if (!figmaUrl || typeof figmaUrl !== 'string') {
       return NextResponse.json(
         { success: false, error: 'figmaUrl is required' },
@@ -51,37 +51,33 @@ export async function POST(request: NextRequest) {
 
     const { fileKey, nodeId } = parseResult.data;
 
-    // Return parsed data — the client will trigger Claude Code to process
+    // Step 1: Fetch screenshot URL from Figma REST API
+    const { imageUrl } = await fetchFigmaScreenshotUrl(fileKey, nodeId);
+
+    // Step 2: Send screenshot to Claude Vision → get HTML
+    const generatedHtml = await generateHtmlFromScreenshot(imageUrl);
+
+    // Step 3: Extract template variables
+    const variables = extractVariables(generatedHtml);
+
     return NextResponse.json({
       success: true,
+      html: generatedHtml,
+      variables,
       figmaUrl,
-      fileKey,
-      nodeId,
-      message: 'FIGMA_MCP_REQUIRED',
-      prompt: `Rewrite the returned output to be Puck friendly and responsive, replacing ALL existing classes with Tailwind v4 utility classes only.
-
-Rules:
-1) Keep the same DOM structure and all data-* attributes exactly as they are.
-2) Do not add custom CSS, <style> tags, inline styles, or external fonts. Use Tailwind classes for typography and colors.
-3) The final output MUST include a <body> wrapper.
-4) IMPORTANT: Replace absolute positioning with a responsive layout using flex and spacing utilities. At the end there should be no absolute positioning.
-5) Make the card responsive.
-6) Use Tailwind font and color tokens.
-7) The button should be accessible, and styled with Tailwind utilities (hover and focus states included).
-8) After generating the HTML, verify your work:
-   - Compare the rendered HTML with the original Figma screenshot
-   - If there are visual discrepancies, iterate on the HTML/CSS to match the design more closely
-   - Pay special attention to: spacing, colors, font sizes, alignment, and how elements wrap/stack on mobile
-   - Repeat until the rendered output matches the Figma design. And dont forget to use a responsive layout`,
+      screenshotUrl: imageUrl,
+      assets: [],
     });
   } catch (error) {
     console.error('Error in figma-to-puck:', error);
+
+    const message =
+      error instanceof Error ? error.message : 'Internal server error';
+    const status = message.includes('environment variable') ? 503 : 500;
+
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
-      { status: 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
