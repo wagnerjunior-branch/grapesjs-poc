@@ -177,6 +177,12 @@ export default function BannerList() {
               Form Editor (Demo)
             </button>
             <button
+              onClick={() => router.push('/puck-editor')}
+              className="border border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-50 transition-colors"
+            >
+              Puck Editor
+            </button>
+            <button
               onClick={() => router.push('/editor')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
