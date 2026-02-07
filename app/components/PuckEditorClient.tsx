@@ -125,6 +125,7 @@ export default function PuckEditorClient({
 
   // --- saved projects list ---
   const [savedProjects, setSavedProjects] = useState<SavedProjectSummary[]>([]);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
   // --- processing state ---
   const [processingMessage, setProcessingMessage] = useState('');
@@ -413,6 +414,38 @@ export default function PuckEditorClient({
       setState('import');
     }
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Delete selected projects
+  // -------------------------------------------------------------------------
+
+  const handleDeleteProjects = useCallback(async () => {
+    if (selectedProjectIds.size === 0) return;
+
+    const count = selectedProjectIds.size;
+    const confirmed = window.confirm(
+      `Delete ${count} project${count > 1 ? 's' : ''}? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch('/api/puck-projects', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedProjectIds) }),
+      });
+
+      if (res.ok) {
+        setSelectedProjectIds(new Set());
+        const listRes = await fetch('/api/puck-projects');
+        if (listRes.ok) {
+          setSavedProjects(await listRes.json());
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete projects:', err);
+    }
+  }, [selectedProjectIds]);
 
   // -------------------------------------------------------------------------
   // Variable change
@@ -829,30 +862,82 @@ export default function PuckEditorClient({
         {/* Saved projects */}
         {savedProjects.length > 0 && (
           <div className="mt-8">
-            <h2 className="mb-3 text-sm font-semibold text-gray-800">
-              Saved Projects
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-semibold text-gray-800">
+                  Saved Projects
+                </h2>
+                <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <input
+                    type="checkbox"
+                    checked={
+                      savedProjects.length > 0 &&
+                      selectedProjectIds.size === savedProjects.length
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedProjectIds(
+                          new Set(savedProjects.map((p) => p.id)),
+                        );
+                      } else {
+                        setSelectedProjectIds(new Set());
+                      }
+                    }}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Select all
+                </label>
+              </div>
+              {selectedProjectIds.size > 0 && (
+                <button
+                  onClick={handleDeleteProjects}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                >
+                  Delete ({selectedProjectIds.size})
+                </button>
+              )}
+            </div>
             <div className="space-y-2">
               {savedProjects.map((p) => (
-                <button
+                <div
                   key={p.id}
-                  onClick={() => loadProject(p.id)}
-                  className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 transition-colors hover:bg-gray-100"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {p.name}
-                    </p>
-                    {p.figmaUrl && (
-                      <p className="mt-0.5 truncate text-xs text-gray-500">
-                        {p.figmaUrl}
+                  <input
+                    type="checkbox"
+                    checked={selectedProjectIds.has(p.id)}
+                    onChange={(e) => {
+                      setSelectedProjectIds((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) {
+                          next.add(p.id);
+                        } else {
+                          next.delete(p.id);
+                        }
+                        return next;
+                      });
+                    }}
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => loadProject(p.id)}
+                    className="flex flex-1 items-center justify-between text-left"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {p.name}
                       </p>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {new Date(p.updatedAt).toLocaleDateString()}
-                  </span>
-                </button>
+                      {p.figmaUrl && (
+                        <p className="mt-0.5 truncate text-xs text-gray-500">
+                          {p.figmaUrl}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(p.updatedAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                </div>
               ))}
             </div>
           </div>

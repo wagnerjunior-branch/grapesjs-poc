@@ -31,6 +31,38 @@ export async function GET() {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'Missing required field: ids (string[])' },
+        { status: 400 }
+      );
+    }
+
+    const result = await prisma.puckProject.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    // Invalidate caches
+    for (const id of ids) {
+      cache.invalidate(CACHE_KEYS.PUCK_PROJECT_BY_ID(id));
+    }
+    cache.invalidate(CACHE_KEYS.PUCK_PROJECTS_LIST);
+
+    return NextResponse.json({ success: true, count: result.count });
+  } catch (error) {
+    console.error('Error deleting puck projects:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete projects' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
