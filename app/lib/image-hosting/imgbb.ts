@@ -12,6 +12,8 @@ export class ImgBBService implements ImageHostingService {
   }
 
   async upload(image: Buffer, filename: string): Promise<HostedImage> {
+    console.log(`[ImgBB] Uploading "${filename}" (${image.length} bytes)`);
+
     const base64 = image.toString('base64');
 
     const formData = new FormData();
@@ -24,16 +26,29 @@ export class ImgBBService implements ImageHostingService {
       body: formData,
     });
 
+    console.log(`[ImgBB] Response status: ${response.status}`);
+
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ImgBB upload failed (${response.status}): ${errorText}`);
+      console.error(`[ImgBB] Upload failed (${response.status}):`, responseText);
+      throw new Error(`ImgBB upload failed (${response.status}): ${responseText}`);
     }
 
-    const data = await response.json();
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error('[ImgBB] Non-JSON response:', responseText.slice(0, 500));
+      throw new Error(`ImgBB returned non-JSON response: ${responseText.slice(0, 200)}`);
+    }
 
     if (!data.success) {
+      console.error('[ImgBB] Upload unsuccessful:', JSON.stringify(data));
       throw new Error(`ImgBB upload failed: ${JSON.stringify(data)}`);
     }
+
+    console.log(`[ImgBB] Upload successful: ${data.data.url}`);
 
     return {
       url: data.data.url,

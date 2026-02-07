@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Exclude server-side files that handle Figma design code with CSS variable patterns */
+@source not "./lib/anthropic.ts";
+@source not "./lib/figma-mcp.ts";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
