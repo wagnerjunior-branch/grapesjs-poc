@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Puck, type Data } from '@measured/puck';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { Puck, usePuck, type Data } from '@measured/puck';
 import '@measured/puck/puck.css';
-import { puckConfig, htmlToPuckData } from '@/app/lib/puck-config';
+import { puckConfig } from '@/app/lib/puck-config';
+import { htmlToPuckData, htmlToComponents, jsonToPuckData } from '@/app/lib/puck-components';
 import { validateFigmaUrl } from '@/app/lib/figma-utils';
 import {
   extractVariables,
+  extractVariablesFromPuckData,
   resolveVariables,
+  resolveVariablesInPuckData,
   type TemplateVariable,
 } from '@/app/lib/puck-template';
 
@@ -40,6 +43,31 @@ interface PuckEditorClientProps {
 
 type EditorState = 'import' | 'processing' | 'editing';
 type ImportTab = 'figma' | 'html';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Check whether puckData uses component-based format (has zones or non-HtmlBlock items). */
+function isComponentBased(data: Data): boolean {
+  if (data.zones && Object.keys(data.zones).length > 0) return true;
+  return data.content.some((item) => item.type !== 'HtmlBlock');
+}
+
+// ---------------------------------------------------------------------------
+// DispatchCapture — captures Puck's internal dispatch into a shared ref.
+// Must be rendered inside Puck's component tree (e.g. via overrides).
+// ---------------------------------------------------------------------------
+
+function DispatchCapture({
+  dispatchRef,
+}: {
+  dispatchRef: React.RefObject<((action: any) => void) | null>;
+}) {
+  const { dispatch } = usePuck();
+  dispatchRef.current = dispatch;
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -75,6 +103,24 @@ export default function PuckEditorClient({
   );
   const [variableValues, setVariableValues] = useState<Record<string, string>>(
     {},
+  );
+  /** Keep the original (unresolved) puckData so variable changes can re-resolve. */
+  const originalPuckDataRef = useRef<Data | null>(null);
+
+  /** Puck's internal dispatch, captured by DispatchCapture inside overrides */
+  const puckDispatchRef = useRef<((action: any) => void) | null>(null);
+
+  /** Stable overrides — never recreated, so Puck won't remount the override component */
+  const puckOverrides = useMemo(
+    () => ({
+      headerActions: ({ children }: { children: React.ReactNode }) => (
+        <>
+          <DispatchCapture dispatchRef={puckDispatchRef} />
+          {children}
+        </>
+      ),
+    }),
+    [],
   );
 
   // --- saved projects list ---
@@ -131,6 +177,7 @@ export default function PuckEditorClient({
     setPuckData(initialProject.puckData as Data);
     setHtml(initialProject.html);
     setVariables(initialProject.variables ?? []);
+    originalPuckDataRef.current = initialProject.puckData as Data;
     setState('editing');
   }, [initialProject]);
 
@@ -167,11 +214,20 @@ export default function PuckEditorClient({
           return;
         }
 
-        // Server always returns HTML on success
-        const vars = extractVariables(result.html);
-        setVariables(vars);
-        setHtml(result.html);
-        await loadHtmlIntoEditor(result.html, vars, figmaUrl);
+        // If the API returned pre-built puckData, use it directly
+        if (result.puckData) {
+          const data = result.puckData as Data;
+          const vars = extractVariablesFromPuckData(data);
+          setVariables(vars);
+          setHtml(result.html || '');
+          await loadPuckDataIntoEditor(data, vars, result.html || '', figmaUrl);
+        } else {
+          // Fallback: server returned HTML only (backward compat)
+          const vars = extractVariables(result.html);
+          setVariables(vars);
+          setHtml(result.html);
+          await loadHtmlIntoEditor(result.html, vars, figmaUrl);
+        }
       } catch (err) {
         console.error('Figma submit error:', err);
         setUrlError(
@@ -189,10 +245,24 @@ export default function PuckEditorClient({
 
   const handleHtmlImport = useCallback(() => {
     if (!rawHtml.trim()) return;
-    const vars = extractVariables(rawHtml);
-    setVariables(vars);
-    setHtml(rawHtml);
-    loadHtmlIntoEditor(rawHtml, vars);
+
+    // Convert HTML to native Puck components
+    const components = htmlToComponents(rawHtml);
+
+    if (components.length > 0) {
+      // Component-based path: fully editable in Puck
+      const data = jsonToPuckData(components) as Data;
+      const vars = extractVariablesFromPuckData(data);
+      setVariables(vars);
+      setHtml(rawHtml);
+      loadPuckDataIntoEditor(data, vars, rawHtml);
+    } else {
+      // Fallback: wrap as HtmlBlock (e.g. empty or unparseable HTML)
+      const vars = extractVariables(rawHtml);
+      setVariables(vars);
+      setHtml(rawHtml);
+      loadHtmlIntoEditor(rawHtml, vars);
+    }
   }, [rawHtml, projectName]);
 
   // -------------------------------------------------------------------------
@@ -217,7 +287,56 @@ export default function PuckEditorClient({
   );
 
   // -------------------------------------------------------------------------
-  // Load HTML into editor (shared helper)
+  // Load pre-built Puck Data into editor (component-based path)
+  // -------------------------------------------------------------------------
+
+  const loadPuckDataIntoEditor = useCallback(
+    async (
+      data: Data,
+      vars: TemplateVariable[],
+      htmlContent: string,
+      figUrl?: string,
+    ) => {
+      setState('processing');
+      setProcessingMessage('Building editor...');
+
+      originalPuckDataRef.current = data;
+      setPuckData(data);
+
+      setProcessingMessage('Saving project...');
+
+      try {
+        const res = await fetch('/api/puck-projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: projectName,
+            figmaUrl: figUrl ?? undefined,
+            html: htmlContent,
+            puckData: data,
+            variables: vars.length > 0 ? vars : undefined,
+          }),
+        });
+
+        if (res.ok) {
+          const project = await res.json();
+          setProjectId(project.id);
+          const listRes = await fetch('/api/puck-projects');
+          if (listRes.ok) {
+            setSavedProjects(await listRes.json());
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save project:', err);
+      }
+
+      setState('editing');
+    },
+    [projectName],
+  );
+
+  // -------------------------------------------------------------------------
+  // Load HTML into editor (HTML import path — backward compat)
   // -------------------------------------------------------------------------
 
   const loadHtmlIntoEditor = useCallback(
@@ -230,6 +349,7 @@ export default function PuckEditorClient({
       setProcessingMessage('Building Puck data...');
 
       const data = htmlToPuckData(htmlContent) as Data;
+      originalPuckDataRef.current = data;
       setPuckData(data);
 
       setProcessingMessage('Saving project...');
@@ -285,6 +405,7 @@ export default function PuckEditorClient({
       setProjectName(project.name);
       setHtml(project.html);
       setPuckData(project.puckData as Data);
+      originalPuckDataRef.current = project.puckData as Data;
       setVariables(project.variables ?? []);
       setState('editing');
     } catch (err) {
@@ -302,10 +423,18 @@ export default function PuckEditorClient({
       setVariableValues((prev) => {
         const next = { ...prev, [name]: value };
 
-        // Resolve variables in the original HTML and rebuild puck data
-        const resolved = resolveVariables(html, next);
-        const newData = htmlToPuckData(resolved) as Data;
-        setPuckData(newData);
+        // Dispatch resolved data directly into Puck's internal store
+        if (puckDispatchRef.current) {
+          const original = originalPuckDataRef.current;
+          if (original && isComponentBased(original)) {
+            const resolved = resolveVariablesInPuckData(original, next);
+            puckDispatchRef.current({ type: 'setData', data: resolved });
+          } else if (html) {
+            const resolvedHtml = resolveVariables(html, next);
+            const newData = htmlToPuckData(resolvedHtml) as Data;
+            puckDispatchRef.current({ type: 'setData', data: newData });
+          }
+        }
 
         return next;
       });
@@ -545,6 +674,19 @@ export default function PuckEditorClient({
               data={puckData}
               onChange={handlePuckChange}
               onPublish={handlePublish}
+              overrides={puckOverrides}
+              viewports={[
+                { width: 375, height: 'auto', label: 'Mobile', icon: 'Smartphone' },
+                { width: 768, height: 'auto', label: 'Tablet', icon: 'Tablet' },
+                { width: 1280, height: 'auto', label: 'Desktop', icon: 'Monitor' },
+              ]}
+              ui={{
+                viewports: {
+                  current: { width: 375, height: 'auto' },
+                  controlsVisible: true,
+                  options: [],
+                },
+              }}
             />
           </div>
         </div>
