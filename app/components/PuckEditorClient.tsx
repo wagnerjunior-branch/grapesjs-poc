@@ -453,27 +453,26 @@ export default function PuckEditorClient({
 
   const handleVariableChange = useCallback(
     (name: string, value: string) => {
-      setVariableValues((prev) => {
-        const next = { ...prev, [name]: value };
-
-        // Dispatch resolved data directly into Puck's internal store
-        if (puckDispatchRef.current) {
-          const original = originalPuckDataRef.current;
-          if (original && isComponentBased(original)) {
-            const resolved = resolveVariablesInPuckData(original, next);
-            puckDispatchRef.current({ type: 'setData', data: resolved });
-          } else if (html) {
-            const resolvedHtml = resolveVariables(html, next);
-            const newData = htmlToPuckData(resolvedHtml) as Data;
-            puckDispatchRef.current({ type: 'setData', data: newData });
-          }
-        }
-
-        return next;
-      });
+      setVariableValues((prev) => ({ ...prev, [name]: value }));
     },
-    [html],
+    [],
   );
+
+  // Sync variable values into Puck's internal store after render
+  useEffect(() => {
+    if (variables.length === 0) return;
+    if (!puckDispatchRef.current) return;
+
+    const original = originalPuckDataRef.current;
+    if (original && isComponentBased(original)) {
+      const resolved = resolveVariablesInPuckData(original, variableValues);
+      puckDispatchRef.current({ type: 'setData', data: resolved });
+    } else if (html) {
+      const resolvedHtml = resolveVariables(html, variableValues);
+      const newData = htmlToPuckData(resolvedHtml) as Data;
+      puckDispatchRef.current({ type: 'setData', data: newData });
+    }
+  }, [variableValues, html, variables.length]);
 
   // -------------------------------------------------------------------------
   // Export
