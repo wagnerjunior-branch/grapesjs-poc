@@ -5,7 +5,7 @@ import { Puck, usePuck, type Data } from '@measured/puck';
 import '@measured/puck/puck.css';
 import { puckConfig } from '@/app/lib/puck-config';
 import { htmlToPuckData, htmlToComponents, jsonToPuckData } from '@/app/lib/puck-components';
-import { validateFigmaUrl } from '@/app/lib/figma-utils';
+// import { validateFigmaUrl } from '@/app/lib/figma-utils'; // Figma import disabled
 import {
   extractVariables,
   extractVariablesFromPuckData,
@@ -42,7 +42,7 @@ interface PuckEditorClientProps {
 }
 
 type EditorState = 'import' | 'processing' | 'editing';
-type ImportTab = 'figma' | 'html';
+// type ImportTab = 'figma' | 'html'; // Figma import disabled
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,9 +82,10 @@ export default function PuckEditorClient({
   );
 
   // --- import form state ---
-  const [figmaUrl, setFigmaUrl] = useState('');
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [importTab, setImportTab] = useState<ImportTab>('figma');
+  // Figma import disabled — keeping state declarations commented out
+  // const [figmaUrl, setFigmaUrl] = useState('');
+  // const [urlError, setUrlError] = useState<string | null>(null);
+  // const [importTab, setImportTab] = useState<ImportTab>('html');
   const [rawHtml, setRawHtml] = useState('');
 
   // --- project state ---
@@ -183,9 +184,9 @@ export default function PuckEditorClient({
   }, [initialProject]);
 
   // -------------------------------------------------------------------------
-  // Figma submit
+  // Figma submit — disabled (no Figma/Anthropic env keys required)
   // -------------------------------------------------------------------------
-
+  /*
   const handleFigmaSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -239,6 +240,7 @@ export default function PuckEditorClient({
     },
     [figmaUrl, projectName],
   );
+  */
 
   // -------------------------------------------------------------------------
   // HTML import
@@ -739,7 +741,7 @@ export default function PuckEditorClient({
             Puck Editor
           </h1>
           <p className="text-gray-600">
-            Import a design from Figma or paste HTML to start editing
+            Paste HTML to start editing
           </p>
         </div>
 
@@ -757,7 +759,7 @@ export default function PuckEditorClient({
           />
         </div>
 
-        {/* Tab toggle */}
+        {/* Tab toggle — Figma import disabled
         <div className="mb-6 flex rounded-lg border border-gray-200">
           <button
             onClick={() => setImportTab('figma')}
@@ -780,8 +782,9 @@ export default function PuckEditorClient({
             Import HTML
           </button>
         </div>
+        */}
 
-        {/* Figma tab */}
+        {/* Figma tab — disabled
         {importTab === 'figma' && (
           <form onSubmit={handleFigmaSubmit} className="space-y-4">
             <div>
@@ -819,9 +822,10 @@ export default function PuckEditorClient({
             </button>
           </form>
         )}
+        */}
 
-        {/* HTML tab */}
-        {importTab === 'html' && (
+        {/* HTML import */}
+        {true && (
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
