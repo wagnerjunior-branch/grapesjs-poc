@@ -62,6 +62,8 @@ const PUCK_TO_CSS: Record<string, string> = {
   borderRadius: 'border-radius',
   maxWidth: 'max-width',
   backgroundImage: 'background-image',
+  backgroundSize: 'background-size',
+  backgroundPosition: 'background-position',
 };
 
 /** Tags that are non-visual and should be stripped from body during import. */

@@ -88,6 +88,9 @@ function componentToHtml(comp: ClaudeComponent): string {
         `gap:${p.gap != null ? `${p.gap}px` : '0px'}`,
         `padding:${p.paddingTop || '0px'} ${p.paddingRight || '0px'} ${p.paddingBottom || '0px'} ${p.paddingLeft || '0px'}`,
         p.backgroundColor ? `background-color:${p.backgroundColor}` : '',
+        p.backgroundImage ? `background-image:${p.backgroundImage}` : '',
+        p.backgroundSize ? `background-size:${p.backgroundSize}` : '',
+        p.backgroundPosition ? `background-position:${p.backgroundPosition}` : '',
         `max-width:${p.maxWidth || '100%'}`,
         `border-radius:${p.borderRadius || '0px'}`,
         'width:100%',
@@ -337,6 +340,12 @@ function containerProps(s: Styles) {
     paddingBottom: ensurePx(s.paddingBottom, '0px'),
     paddingLeft: ensurePx(s.paddingLeft, '0px'),
     backgroundColor: s.backgroundColor || '',
+    backgroundImage: s.backgroundImage || '',
+    backgroundSize: s.backgroundSize || '',
+    backgroundPosition: s.backgroundPosition
+      || (s.backgroundPositionX && s.backgroundPositionY
+        ? `${s.backgroundPositionX} ${s.backgroundPositionY}`
+        : ''),
     borderRadius: ensurePx(s.borderRadius, '0px'),
     maxWidth: s.maxWidth || '100%',
   };

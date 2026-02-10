@@ -23,6 +23,9 @@ type FlexProps = {
   wrap: 'nowrap' | 'wrap';
   gap: number;
   backgroundColor: string;
+  backgroundImage: string;
+  backgroundSize: string;
+  backgroundPosition: string;
   paddingTop: string;
   paddingRight: string;
   paddingBottom: string;
@@ -197,6 +200,9 @@ export const puckConfig: Config<Components> = {
         },
         gap: { type: 'number', min: 0 },
         backgroundColor: { type: 'text' },
+        backgroundImage: { type: 'text' },
+        backgroundSize: { type: 'text' },
+        backgroundPosition: { type: 'text' },
         paddingTop: { type: 'text' },
         paddingRight: { type: 'text' },
         paddingBottom: { type: 'text' },
@@ -211,6 +217,9 @@ export const puckConfig: Config<Components> = {
         wrap: 'nowrap',
         gap: 0,
         backgroundColor: '',
+        backgroundImage: '',
+        backgroundSize: '',
+        backgroundPosition: '',
         paddingTop: '0px',
         paddingRight: '0px',
         paddingBottom: '0px',
@@ -225,6 +234,9 @@ export const puckConfig: Config<Components> = {
         wrap,
         gap,
         backgroundColor,
+        backgroundImage,
+        backgroundSize,
+        backgroundPosition,
         paddingTop,
         paddingRight,
         paddingBottom,
@@ -236,6 +248,10 @@ export const puckConfig: Config<Components> = {
           <div
             style={{
               backgroundColor: backgroundColor || undefined,
+              backgroundImage: backgroundImage || undefined,
+              backgroundSize: backgroundSize || undefined,
+              backgroundPosition: backgroundPosition || undefined,
+              backgroundRepeat: backgroundImage ? 'no-repeat' : undefined,
               paddingTop,
               paddingRight,
               paddingBottom,
@@ -244,6 +260,7 @@ export const puckConfig: Config<Components> = {
               borderRadius,
               width: '100%',
               boxSizing: 'border-box',
+              minHeight: backgroundImage ? '200px' : undefined,
             }}
           >
             <DropZone
