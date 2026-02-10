@@ -10,7 +10,7 @@ export interface TemplateVariable {
  * Returns unique variable names with their first occurrence as default value.
  */
 export function extractVariables(html: string): TemplateVariable[] {
-  const regex = /\{\{(\w+)\}\}/g;
+  const regex = /\{\{([\w$]+)\}\}/g;
   const seen = new Set<string>();
   const variables: TemplateVariable[] = [];
 
@@ -34,7 +34,7 @@ export function resolveVariables(
   html: string,
   values: Record<string, string>
 ): string {
-  return html.replace(/\{\{(\w+)\}\}/g, (fullMatch, name) => {
+  return html.replace(/\{\{([\w$]+)\}\}/g, (fullMatch, name) => {
     return name in values ? values[name] : fullMatch;
   });
 }
@@ -44,7 +44,7 @@ export function resolveVariables(
  * (walks content[] and zones{}).
  */
 export function extractVariablesFromPuckData(data: Data): TemplateVariable[] {
-  const regex = /\{\{(\w+)\}\}/g;
+  const regex = /\{\{([\w$]+)\}\}/g;
   const seen = new Set<string>();
   const variables: TemplateVariable[] = [];
 
@@ -90,7 +90,7 @@ export function resolveVariablesInPuckData(
     const resolved: Record<string, any> = {};
     for (const [key, value] of Object.entries(props)) {
       if (typeof value === 'string') {
-        resolved[key] = value.replace(/\{\{(\w+)\}\}/g, (full, name) =>
+        resolved[key] = value.replace(/\{\{([\w$]+)\}\}/g, (full, name) =>
           name in values ? values[name] : full
         );
       } else {
