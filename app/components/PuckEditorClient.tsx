@@ -499,12 +499,19 @@ export default function PuckEditorClient({
     if (variables.length === 0) return;
     if (!puckDispatchRef.current) return;
 
+    // Only resolve variables that have a non-empty value.
+    // Empty values are left as {{placeholder}} so text doesn't disappear.
+    const nonEmptyValues: Record<string, string> = {};
+    for (const [name, value] of Object.entries(variableValues)) {
+      if (value) nonEmptyValues[name] = value;
+    }
+
     const original = originalPuckDataRef.current;
     if (original && isComponentBased(original)) {
-      const resolved = resolveVariablesInPuckData(original, variableValues);
+      const resolved = resolveVariablesInPuckData(original, nonEmptyValues);
       puckDispatchRef.current({ type: 'setData', data: resolved });
     } else if (html) {
-      const resolvedHtml = resolveVariables(html, variableValues);
+      const resolvedHtml = resolveVariables(html, nonEmptyValues);
       const newData = htmlToPuckData(resolvedHtml) as Data;
       puckDispatchRef.current({ type: 'setData', data: newData });
     }
@@ -517,6 +524,12 @@ export default function PuckEditorClient({
   const handleExport = useCallback(
     async (mode: 'clean' | 'template') => {
       let output: string;
+
+      // Only resolve variables that have non-empty values
+      const nonEmptyValues: Record<string, string> = {};
+      for (const [name, value] of Object.entries(variableValues)) {
+        if (value) nonEmptyValues[name] = value;
+      }
 
       // Check if this is a full document project
       const docMeta: DocumentMeta | undefined = (puckData.root?.props as any)?._documentMeta;
@@ -531,12 +544,12 @@ export default function PuckEditorClient({
         if (reconstructed) {
           output = mode === 'template'
             ? reconstructed
-            : resolveVariables(reconstructed, variableValues);
+            : resolveVariables(reconstructed, nonEmptyValues);
         } else {
-          output = mode === 'template' ? html : resolveVariables(html, variableValues);
+          output = mode === 'template' ? html : resolveVariables(html, nonEmptyValues);
         }
       } else {
-        output = mode === 'template' ? html : resolveVariables(html, variableValues);
+        output = mode === 'template' ? html : resolveVariables(html, nonEmptyValues);
       }
 
       try {
