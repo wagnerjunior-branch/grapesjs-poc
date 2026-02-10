@@ -523,7 +523,11 @@ export default function PuckEditorClient({
 
       if (docMeta) {
         // Full document export: reconstruct with CSS classes
-        const reconstructed = rebuildFullDocument(puckData);
+        // For template mode, use the original unresolved data to preserve {{variables}}
+        const sourceData = mode === 'template'
+          ? (originalPuckDataRef.current ?? puckData)
+          : puckData;
+        const reconstructed = rebuildFullDocument(sourceData);
         if (reconstructed) {
           output = mode === 'template'
             ? reconstructed

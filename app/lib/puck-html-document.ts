@@ -70,17 +70,36 @@ const NON_VISUAL_TAGS = new Set(['SCRIPT', 'META', 'LINK', 'NOSCRIPT', 'STYLE'])
 /** Container component types that have DropZone children zones. */
 const CONTAINER_TYPES = new Set(['Flex', 'Grid']);
 
+/** Expected mapping from DOM tag to Puck component type for sanity checking. */
+const TAG_TO_PUCK_TYPE: Record<string, string[]> = {
+  h1: ['Heading'], h2: ['Heading'], h3: ['Heading'], h4: ['Heading'], h5: ['Heading'], h6: ['Heading'],
+  p: ['Text'], span: ['Text'], strong: ['Text'], em: ['Text'], b: ['Text'], i: ['Text'], small: ['Text'], label: ['Text'],
+  img: ['Image'],
+  a: ['Button', 'Text'],
+  button: ['Button'],
+  hr: ['Divider'],
+  br: ['Space'],
+  div: ['Flex', 'Grid', 'Space', 'Text'],
+  section: ['Flex', 'Grid'], article: ['Flex', 'Grid'], header: ['Flex', 'Grid'], footer: ['Flex', 'Grid'],
+  nav: ['Flex', 'Grid'], main: ['Flex', 'Grid'], aside: ['Flex', 'Grid'],
+  ul: ['Flex', 'Grid'], ol: ['Flex', 'Grid'], li: ['Flex', 'Grid'],
+  table: ['Flex', 'Grid'], form: ['Flex', 'Grid'], fieldset: ['Flex', 'Grid'],
+  figure: ['Flex', 'Grid'], blockquote: ['Flex', 'Grid'],
+  thead: ['Flex', 'Grid'], tbody: ['Flex', 'Grid'], tr: ['Flex', 'Grid'], td: ['Flex', 'Grid'], th: ['Flex', 'Grid'],
+};
+
 // ---------------------------------------------------------------------------
 // Import-side functions
 // ---------------------------------------------------------------------------
 
 /**
  * Returns true if the HTML string appears to be a full HTML document
- * (contains <html, <head, or <style tags).
+ * (contains <html, <!doctype, or <head tags).
+ * A fragment with only a <style> tag does NOT qualify as a full document.
  */
 export function isFullHtmlDocument(html: string): boolean {
-  const lower = html.toLowerCase();
-  return lower.includes('<html') || lower.includes('<head') || lower.includes('<style');
+  const lower = html.trim().toLowerCase();
+  return lower.includes('<html') || lower.includes('<!doctype') || lower.includes('<head');
 }
 
 /**
@@ -442,6 +461,14 @@ function attachMetaToComponents(
     const comp = components[compIdx];
     if (!comp) break;
 
+    // Sanity check: verify DOM tag matches expected Puck component type
+    const expectedTypes = TAG_TO_PUCK_TYPE[el.tagName.toLowerCase()];
+    if (expectedTypes && !expectedTypes.includes(comp.type)) {
+      // Trees are out of sync — skip this assignment
+      console.warn(`[puck-html-document] Tree sync mismatch: DOM <${el.tagName.toLowerCase()}> vs Puck ${comp.type}, skipping _meta`);
+      continue;
+    }
+
     // Resolve styles for _meta (use original resolved styles, not the inline ones)
     const resolvedStyles = resolveStylesForElement(el, rules);
     const meta = extractElementMeta(el, rules, resolvedStyles);
@@ -582,6 +609,13 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * Escape a string for safe use inside an HTML attribute value (double-quoted).
+ */
+function escapeAttr(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
  * Build an opening tag from ElementMeta.
  * e.g. <div class="banner-title" id="main" data-id="abc" role="banner">
  */
@@ -589,19 +623,19 @@ function buildOpeningTag(meta: ElementMeta): string {
   const parts: string[] = [meta.tag];
 
   if (meta.id) {
-    parts.push(`id="${meta.id}"`);
+    parts.push(`id="${escapeAttr(meta.id)}"`);
   }
 
   if (meta.classes.length > 0) {
-    parts.push(`class="${meta.classes.join(' ')}"`);
+    parts.push(`class="${escapeAttr(meta.classes.join(' '))}"`);
   }
 
   if (meta.dataId) {
-    parts.push(`data-id="${meta.dataId}"`);
+    parts.push(`data-id="${escapeAttr(meta.dataId)}"`);
   }
 
   for (const [name, value] of Object.entries(meta.attrs)) {
-    parts.push(`${name}="${value}"`);
+    parts.push(`${name}="${escapeAttr(value)}"`);
   }
 
   return `<${parts.join(' ')}>`;
@@ -643,13 +677,13 @@ function renderWithMeta(
     // For img, update src/alt from props
     if (meta.tag === 'img') {
       const parts = [meta.tag];
-      if (meta.id) parts.push(`id="${meta.id}"`);
-      if (meta.classes.length > 0) parts.push(`class="${meta.classes.join(' ')}"`);
-      if (props.src) parts.push(`src="${props.src}"`);
-      if (props.alt) parts.push(`alt="${props.alt}"`);
+      if (meta.id) parts.push(`id="${escapeAttr(meta.id)}"`);
+      if (meta.classes.length > 0) parts.push(`class="${escapeAttr(meta.classes.join(' '))}"`);
+      if (props.src) parts.push(`src="${escapeAttr(props.src)}"`);
+      if (props.alt) parts.push(`alt="${escapeAttr(props.alt)}"`);
       for (const [name, value] of Object.entries(meta.attrs)) {
         if (name !== 'src' && name !== 'alt') {
-          parts.push(`${name}="${value}"`);
+          parts.push(`${name}="${escapeAttr(value)}"`);
         }
       }
       return `<${parts.join(' ')} />`;
@@ -672,16 +706,16 @@ function renderWithMeta(
   if (comp.type === 'Button') {
     // For buttons/links, update href
     const parts = [meta.tag];
-    if (meta.id) parts.push(`id="${meta.id}"`);
-    if (meta.classes.length > 0) parts.push(`class="${meta.classes.join(' ')}"`);
+    if (meta.id) parts.push(`id="${escapeAttr(meta.id)}"`);
+    if (meta.classes.length > 0) parts.push(`class="${escapeAttr(meta.classes.join(' '))}"`);
     if (props.href && meta.attrs.href !== undefined) {
-      parts.push(`href="${props.href}"`);
+      parts.push(`href="${escapeAttr(props.href)}"`);
     } else if (props.href) {
-      parts.push(`href="${props.href}"`);
+      parts.push(`href="${escapeAttr(props.href)}"`);
     }
     for (const [name, value] of Object.entries(meta.attrs)) {
       if (name !== 'href') {
-        parts.push(`${name}="${value}"`);
+        parts.push(`${name}="${escapeAttr(value)}"`);
       }
     }
     return `<${parts.join(' ')}>${escapeHtml(text)}</${meta.tag}>`;
