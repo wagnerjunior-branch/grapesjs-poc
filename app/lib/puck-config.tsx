@@ -5,6 +5,8 @@ import type { Config } from '@measured/puck';
 import { DropZone } from '@measured/puck';
 export { jsonToPuckData, componentsToHtml, htmlToPuckData, htmlToComponents } from './puck-components';
 export type { ClaudeComponent } from './puck-components';
+export { isFullHtmlDocument, fullDocumentToComponents, rebuildFullDocument } from './puck-html-document';
+export type { DocumentMeta, ElementMeta } from './puck-html-document';
 
 // ---------------------------------------------------------------------------
 // Component prop types
