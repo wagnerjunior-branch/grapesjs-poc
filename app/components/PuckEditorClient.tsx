@@ -13,6 +13,8 @@ import {
   resolveVariablesInPuckData,
   type TemplateVariable,
 } from '@/app/lib/puck-template';
+import { isFullHtmlDocument, fullDocumentToComponents, rebuildFullDocument } from '@/app/lib/puck-html-document';
+import type { DocumentMeta } from '@/app/lib/puck-html-document';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,6 +54,19 @@ type EditorState = 'import' | 'processing' | 'editing';
 function isComponentBased(data: Data): boolean {
   if (data.zones && Object.keys(data.zones).length > 0) return true;
   return data.content.some((item) => item.type !== 'HtmlBlock');
+}
+
+/** Merge two variable lists, deduplicating by name. */
+function mergeVariables(a: TemplateVariable[], b: TemplateVariable[]): TemplateVariable[] {
+  const seen = new Set(a.map((v) => v.name));
+  const merged = [...a];
+  for (const v of b) {
+    if (!seen.has(v.name)) {
+      seen.add(v.name);
+      merged.push(v);
+    }
+  }
+  return merged;
 }
 
 // ---------------------------------------------------------------------------
@@ -249,18 +264,37 @@ export default function PuckEditorClient({
   const handleHtmlImport = useCallback(() => {
     if (!rawHtml.trim()) return;
 
-    // Convert HTML to native Puck components
-    const components = htmlToComponents(rawHtml);
+    // Auto-detect: full document vs fragment
+    if (isFullHtmlDocument(rawHtml)) {
+      const result = fullDocumentToComponents(rawHtml);
+      if (result) {
+        const { components, documentMeta } = result;
+        const data = jsonToPuckData(components) as Data;
 
+        // Store documentMeta in root.props for export reconstruction
+        (data.root.props as any)._documentMeta = documentMeta;
+
+        const vars = extractVariablesFromPuckData(data);
+        const scriptVars = extractVariables(documentMeta.bodyScripts);
+        const allVars = mergeVariables(vars, scriptVars);
+
+        setVariables(allVars);
+        setHtml(rawHtml);
+        loadPuckDataIntoEditor(data, allVars, rawHtml);
+        return;
+      }
+      // If fullDocumentToComponents failed, fall through to existing flow
+    }
+
+    // Existing fragment flow
+    const components = htmlToComponents(rawHtml);
     if (components.length > 0) {
-      // Component-based path: fully editable in Puck
       const data = jsonToPuckData(components) as Data;
       const vars = extractVariablesFromPuckData(data);
       setVariables(vars);
       setHtml(rawHtml);
       loadPuckDataIntoEditor(data, vars, rawHtml);
     } else {
-      // Fallback: wrap as HtmlBlock (e.g. empty or unparseable HTML)
       const vars = extractVariables(rawHtml);
       setVariables(vars);
       setHtml(rawHtml);
@@ -483,10 +517,22 @@ export default function PuckEditorClient({
   const handleExport = useCallback(
     async (mode: 'clean' | 'template') => {
       let output: string;
-      if (mode === 'template') {
-        output = html;
+
+      // Check if this is a full document project
+      const docMeta: DocumentMeta | undefined = (puckData.root?.props as any)?._documentMeta;
+
+      if (docMeta) {
+        // Full document export: reconstruct with CSS classes
+        const reconstructed = rebuildFullDocument(puckData);
+        if (reconstructed) {
+          output = mode === 'template'
+            ? reconstructed
+            : resolveVariables(reconstructed, variableValues);
+        } else {
+          output = mode === 'template' ? html : resolveVariables(html, variableValues);
+        }
       } else {
-        output = resolveVariables(html, variableValues);
+        output = mode === 'template' ? html : resolveVariables(html, variableValues);
       }
 
       try {
@@ -497,7 +543,6 @@ export default function PuckEditorClient({
             : 'Clean HTML copied to clipboard!',
         );
       } catch {
-        // Fallback: open in a new window
         const w = window.open('', '_blank');
         if (w) {
           w.document.write(
@@ -506,7 +551,7 @@ export default function PuckEditorClient({
         }
       }
     },
-    [html, variableValues],
+    [html, variableValues, puckData],
   );
 
   // -------------------------------------------------------------------------
@@ -517,6 +562,13 @@ export default function PuckEditorClient({
     async (data: Data) => {
       if (!projectId) return;
 
+      // If full document, reconstruct HTML for storage
+      const docMeta: DocumentMeta | undefined = (data.root?.props as any)?._documentMeta;
+      let updatedHtml: string | undefined;
+      if (docMeta) {
+        updatedHtml = rebuildFullDocument(data) || undefined;
+      }
+
       try {
         await fetch(`/api/puck-projects/${projectId}`, {
           method: 'PUT',
@@ -524,10 +576,12 @@ export default function PuckEditorClient({
           body: JSON.stringify({
             name: projectName,
             puckData: data,
+            ...(updatedHtml ? { html: updatedHtml } : {}),
             variables: variables.length > 0 ? variables : undefined,
           }),
         });
 
+        if (updatedHtml) setHtml(updatedHtml);
         alert('Project saved!');
       } catch (err) {
         console.error('Failed to publish:', err);
