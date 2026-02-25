@@ -13,17 +13,11 @@
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:migrate:deploy": "dotenv -e .env.local -- prisma migrate deploy",
-    "db:studio": "dotenv -e .env.local -- prisma studio",
-    "screenshot": "node scripts/screenshot-mobile.js",
-    "compare": "node scripts/compare-screenshots.js",
-    "fetch-figma": "node scripts/fetch-figma-screenshot.js"
+    "db:studio": "dotenv -e .env.local -- prisma studio"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.73.0",
     "@grapesjs/studio-sdk": "^1.0.0",
     "@grapesjs/studio-sdk-plugins": "^1.0.32",
-    "@measured/puck": "^0.20.2",
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "@prisma/client": "^5.9.1",
     "@radix-ui/react-switch": "^1.1.1",
     "class-variance-authority": "^0.7.1",
