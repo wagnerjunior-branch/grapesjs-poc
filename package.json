@@ -16,8 +16,7 @@
     "db:studio": "dotenv -e .env.local -- prisma studio"
   },
   "dependencies": {
-    "@grapesjs/studio-sdk": "^1.0.0",
-    "@grapesjs/studio-sdk-plugins": "^1.0.32",
+    "@grapesjs/react": "^2.0.0",
     "@prisma/client": "^5.9.1",
     "@radix-ui/react-switch": "^1.1.1",
     "class-variance-authority": "^0.7.1",
