@@ -1,0 +1,56 @@
+/* Editor Theme — Change these values to apply custom branding */
+
+:root {
+  /* Brand */
+  --editor-brand-primary: #008294;
+  --editor-brand-primary-hover: #006d7a;
+  --editor-brand-primary-light: #e6f4f6;
+  --editor-brand-primary-text: #008294;
+
+  /* Surfaces */
+  --editor-bg-body: #f5f5f5;
+  --editor-bg-panel: #ffffff;
+  --editor-bg-canvas: #e8e8e8;
+  --editor-bg-topnav: #ffffff;
+  --editor-bg-toolbar: #ffffff;
+  --editor-bg-sidebar: #ffffff;
+
+  /* Borders */
+  --editor-border-color: #e5e7eb;
+  --editor-border-color-strong: #d1d5db;
+
+  /* Text */
+  --editor-text-primary: #1f2937;
+  --editor-text-secondary: #6b7280;
+  --editor-text-muted: #9ca3af;
+  --editor-text-on-brand: #ffffff;
+
+  /* Blocks */
+  --editor-block-bg: #ffffff;
+  --editor-block-border: #e5e7eb;
+  --editor-block-hover-bg: #f9fafb;
+  --editor-block-hover-border: #d1d5db;
+  --editor-block-icon-color: #6b7280;
+
+  /* Selection (canvas) */
+  --editor-selection-color: #3b97e3;
+  --editor-selection-parent: #ffca6f;
+
+  /* Tabs */
+  --editor-tab-active-border: #1f2937;
+  --editor-tab-active-text: #1f2937;
+  --editor-tab-inactive-text: #6b7280;
+
+  /* Status */
+  --editor-success: #10b981;
+  --editor-error: #ef4444;
+  --editor-warning: #f59e0b;
+
+  /* Buttons */
+  --editor-btn-primary-bg: var(--editor-brand-primary);
+  --editor-btn-primary-hover: var(--editor-brand-primary-hover);
+  --editor-btn-primary-text: var(--editor-text-on-brand);
+  --editor-btn-secondary-bg: transparent;
+  --editor-btn-secondary-border: var(--editor-border-color-strong);
+  --editor-btn-secondary-text: var(--editor-text-primary);
+}
