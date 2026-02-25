@@ -169,7 +169,7 @@ export default function CustomEditor({ mode = 'banner' }: CustomEditorProps) {
   return (
     <GjsEditor
       grapesjs={grapesjs}
-      grapesjsCss="https://unpkg.com/grapesjs/dist/css/grapes.min.css"
+      grapesjsCss="https://unpkg.com/grapesjs@0.22.14/dist/css/grapes.min.css"
       options={{
         height: '100%',
         storageManager: false,
@@ -192,7 +192,9 @@ export default function CustomEditor({ mode = 'banner' }: CustomEditorProps) {
           <Toolbar />
         </WithEditor>
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
+          <WithEditor>
+            <Sidebar />
+          </WithEditor>
           <Canvas className="flex-1" style={{ backgroundColor: 'var(--editor-bg-canvas)' }} />
         </div>
       </div>
