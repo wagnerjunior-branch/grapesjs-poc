@@ -91,8 +91,8 @@ const brazeBlocksPlugin: Plugin = (editor: Editor) => {
           {
             type: 'select', name: 'target', label: 'Open in',
             options: [
-              { value: '', name: 'Same window' },
-              { value: '_blank', name: 'New window' },
+              { id: 'same', value: '', name: 'Same window' },
+              { id: 'blank', value: '_blank', name: 'New window' },
             ],
           },
         ],
