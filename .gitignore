@@ -48,3 +48,5 @@ next-env.d.ts
 screenshots/
 html/
 .figma-requests/
+editor_files/
+editor.html
