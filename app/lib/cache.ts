@@ -59,5 +59,4 @@ export const CACHE_KEYS = {
   BANNER_BY_ID: (id: string) => `banners:${id}`,
   CREATIVES_LIST: 'creatives:list',
   CREATIVE_BY_ID: (id: string) => `creatives:${id}`,
-  EDITOR_SETTINGS: 'editor-settings',
 };
