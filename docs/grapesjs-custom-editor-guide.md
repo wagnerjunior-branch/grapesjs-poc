@@ -136,11 +136,19 @@ Create a CSS file with all editor colors as custom properties. This allows you t
 }
 ```
 
-**Usage in components:** apply variables via the `style` prop:
+**Usage in components:** apply variables via Tailwind CSS classes. Tailwind v4 supports a shorthand syntax for CSS variables:
 
 ```tsx
-<div style={{ backgroundColor: 'var(--editor-bg-toolbar)' }}>
+<div className="bg-(--editor-bg-toolbar)">
 ```
+
+This works with any CSS property — `bg-(...)`, `text-(...)`, `border-(...)`, etc. Hover states and other modifiers work too:
+
+```tsx
+<div className="bg-(--editor-block-bg) hover:bg-(--editor-block-hover-bg)">
+```
+
+> **Note:** If using Tailwind v3, use the longer arbitrary value syntax: `bg-[var(--editor-bg-toolbar)]`
 
 ---
 
@@ -359,19 +367,14 @@ function BlockItem({
       draggable
       onDragStart={(e) => dragStart(block, e.nativeEvent)}
       onDragEnd={() => dragStop(false)}
-      className="flex flex-col items-center p-3 rounded-lg border cursor-grab"
-      style={{
-        backgroundColor: 'var(--editor-block-bg)',
-        borderColor: 'var(--editor-block-border)',
-      }}
+      className="flex flex-col items-center p-3 rounded-lg border cursor-grab bg-(--editor-block-bg) border-(--editor-block-border) hover:bg-(--editor-block-hover-bg) hover:border-(--editor-block-hover-border)"
     >
       {/* Block SVG icon (defined in the plugin via `media`) */}
       <div
-        className="w-8 h-8 mb-1"
-        style={{ color: 'var(--editor-block-icon-color)' }}
+        className="w-8 h-8 mb-1 text-(--editor-block-icon-color)"
         dangerouslySetInnerHTML={{ __html: block.getMedia() || '' }}
       />
-      <span className="text-xs" style={{ color: 'var(--editor-text-primary)' }}>
+      <span className="text-xs text-(--editor-text-primary)">
         {block.getLabel()}
       </span>
     </div>
@@ -383,15 +386,14 @@ export default function Sidebar() {
 
   if (collapsed) {
     return (
-      <div style={{ backgroundColor: 'var(--editor-bg-sidebar)' }}>
+      <div className="bg-(--editor-bg-sidebar)">
         <button onClick={() => setCollapsed(false)}>{'>'}</button>
       </div>
     );
   }
 
   return (
-    <div className="w-72 border-r overflow-y-auto"
-         style={{ backgroundColor: 'var(--editor-bg-sidebar)' }}>
+    <div className="w-72 border-r overflow-y-auto bg-(--editor-bg-sidebar)">
       <button onClick={() => setCollapsed(true)}>{'<'}</button>
 
       <BlocksProvider>
@@ -462,25 +464,21 @@ export default function Toolbar() {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--editor-bg-toolbar)' }}>
+    <div className="bg-(--editor-bg-toolbar)">
       <button onClick={handleUndo}>Undo</button>
       <button onClick={handleRedo}>Redo</button>
 
       <button
         onClick={() => handleDeviceChange('mobile')}
-        style={{
-          backgroundColor: activeDevice === 'mobile'
-            ? 'var(--editor-brand-primary-light)' : 'transparent',
-        }}
+        className={activeDevice === 'mobile'
+          ? 'bg-(--editor-brand-primary-light)' : 'bg-transparent'}
       >
         Mobile
       </button>
       <button
         onClick={() => handleDeviceChange('desktop')}
-        style={{
-          backgroundColor: activeDevice === 'desktop'
-            ? 'var(--editor-brand-primary-light)' : 'transparent',
-        }}
+        className={activeDevice === 'desktop'
+          ? 'bg-(--editor-brand-primary-light)' : 'bg-transparent'}
       >
         Desktop
       </button>
@@ -564,8 +562,7 @@ export default function CustomEditor() {
       onReady={onReady}
     >
       {/* Everything inside GjsEditor has access to the editor context */}
-      <div className="flex flex-col h-screen"
-           style={{ backgroundColor: 'var(--editor-bg-body)' }}>
+      <div className="flex flex-col h-screen bg-(--editor-bg-body)">
 
         {/* Toolbar — needs WithEditor because it uses useEditor() */}
         <WithEditor>
@@ -579,10 +576,7 @@ export default function CustomEditor() {
           </WithEditor>
 
           {/* Canvas — rendered by GrapeJS */}
-          <Canvas
-            className="flex-1"
-            style={{ backgroundColor: 'var(--editor-bg-canvas)' }}
-          />
+          <Canvas className="flex-1 bg-(--editor-bg-canvas)" />
         </div>
       </div>
     </GjsEditor>

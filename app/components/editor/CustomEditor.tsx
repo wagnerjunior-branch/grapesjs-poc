@@ -180,7 +180,7 @@ export default function CustomEditor({ mode = 'banner' }: CustomEditorProps) {
       plugins={[brazeBlocksPlugin]}
       onReady={onReady}
     >
-      <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--editor-bg-body)' }}>
+      <div className="flex flex-col h-screen bg-(--editor-bg-body)">
         <TopNav
           campaignName={itemName}
           onCampaignNameChange={setItemName}
@@ -195,7 +195,7 @@ export default function CustomEditor({ mode = 'banner' }: CustomEditorProps) {
           <WithEditor>
             <Sidebar />
           </WithEditor>
-          <Canvas className="flex-1" style={{ backgroundColor: 'var(--editor-bg-canvas)' }} />
+          <Canvas className="flex-1 bg-(--editor-bg-canvas)" />
         </div>
       </div>
     </GjsEditor>
